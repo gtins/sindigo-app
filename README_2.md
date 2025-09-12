@@ -1,4 +1,4 @@
-# RFC – SindiGo!
+# RFC – SindiGo! - Detalhado
 **Aplicação Web para Gestão de Atividades Condominiais**  
 Centro Universitário Católica de Santa Catarina  
 Aluno: Gustavo Henrique Martins  
@@ -7,34 +7,32 @@ Joinville, SC – 2025
 ---
 
 ## Resumo executivo  
-O SindiGo! é uma aplicação web voltada para síndicos e administradoras de condomínios, cujo objetivo é centralizar o **planejamento, execução e registro** de atividades periódicas (ex.: limpeza de piscina, dedetização, troca de gás) e pontuais (manutenções, emergências). O sistema também oferecerá funcionalidades complementares como **reserva de áreas comuns**, **registro simplificado de fluxos financeiros**, relatórios e mecanismos de auditoria para suporte à gestão. O projeto prioriza **segurança (OWAS...
+O SindiGo! é uma aplicação web voltada para síndicos e administradoras de condomínios, cujo objetivo é centralizar o planejamento, execução e registro de atividades periódicas (ex.: limpeza de piscina, dedetização, troca de gás) e pontuais (manutenções, emergências). O sistema também oferecerá funcionalidades complementares como reserva de áreas comuns, registro simplificado de fluxos financeiros, relatórios e mecanismos de auditoria para suporte à gestão. O projeto prioriza segurança (OWASP), privacidade (LGPD), usabilidade e praticidade para o dia a dia do síndico.
 
 ---
 
 ## 1. Introdução
 
 ### 1.1 Contexto  
-A rotina de gestão condominial envolve tarefas repetitivas (manutenções preventivas) e eventos pontuais (consertos, emergências). Síndicos normalmente utilizam planilhas, mensagens em grupos e memoriais escritos, o que provoca perda de histórico, dificuldade de prestação de contas e risco legal. Uma solução específica para essa atividade melhora eficiência operacional, transparência e conformidade documental.
+A rotina de gestão condominial envolve tarefas repetitivas (manutenções preventivas) e eventos pontuais (consertos, emergências). Síndicos normalmente utilizam planilhas, mensagens em grupos e memoriais escritos, o que provoca perda de histórico, dificuldade de prestação de contas e risco legal. Conforme Sommerville (2011), falhas em processos administrativos podem comprometer a confiabilidade das informações e gerar impactos legais e financeiros. O SindiGo! se apresenta como solução prática, centralizando rotinas condominiais em uma plataforma única.
 
-### 1.2 Justificativa (expandida)  
+### 1.2 Justificativa  
 - **Eficiência operacional**: centralizar atividades e reservas reduz tempo gasto em coordenação.  
-- **Rastreabilidade e auditoria**: registros formais essenciais para prestação de contas.  
-- **Segurança e conformidade**: proteção de dados e controle de acessos reduzem riscos.  
-- **Viabilidade acadêmica**: aplicação de padrões de engenharia de software (DDD, testes, CI/CD).  
-- **Impacto social**: melhora a qualidade de moradia ao reduzir falhas de manutenção.
+- **Rastreabilidade**: registros formais essenciais para prestação de contas.  
+- **Segurança**: proteção de dados e controle de acessos reduzem riscos.  
 
 ### 1.3 Objetivos  
 **Objetivo Geral**  
 Desenvolver e validar uma aplicação web para gestão de atividades condominiais.  
 
-**Objetivos Específicos**  
+**Metas Específicas**  
 1. Cadastro e autenticação de síndicos e moradores.  
 2. Registro e execução de atividades periódicas.  
 3. Registro de atividades pontuais e emergenciais.  
 4. Reservas de áreas comuns com regras de conflito.  
 5. Carteira financeira simplificada.  
 6. Relatórios gerenciais e logs de auditoria.  
-7. Conformidade com LGPD e OWASP.  
+7. Conformidade com LGPD e OWASP. ( A confirmar com a professora) 
 8. Interface responsiva e acessível.  
 
 ---
@@ -76,31 +74,13 @@ Desenvolver e validar uma aplicação web para gestão de atividades condominiai
 - RF07: Dashboard e relatórios.  
 - RF08: Auditoria.  
 
-### 3.2 Requisitos Não Funcionais  
+### 3.2 Requisitos Não Funcionais  ( A confirmar com a professora) 
 - Disponibilidade 95% no MVP.  
 - Resposta < 700 ms p95.  
 - Arquitetura escalável.  
 - Segurança OWASP Top 10.  
 - Backup diário com RTO < 4h.  
 - Acessibilidade WCAG AA.  
-
-### 3.3 Modelagem de dados (conceitual)  
-Entidades: Condominium, Block, Unit, User, ActivityTemplate, ActivityInstance, Reservation, Transaction, AuditLog.  
-
-### 3.4 API REST (exemplo)  
-- POST /api/v1/auth/register  
-- POST /api/v1/auth/login  
-- GET /api/v1/condominiums/{id}  
-- POST /api/v1/activities  
-- GET /api/v1/activities/instances  
-- POST /api/v1/reservations  
-- POST /api/v1/transactions  
-
-### 3.5 Autenticação e autorização  
-- JWT para APIs, tokens curtos e refresh.  
-- Hash Argon2id.  
-- RBAC: ADMIN, RESIDENT, PROVIDER.  
-- MFA opcional.  
 
 ---
 
@@ -124,7 +104,7 @@ Usuários acessam via navegador (React) → API (Spring Boot) → PostgreSQL + R
 
 ## 5. Segurança e Conformidade
 
-### 5.1 OWASP  
+### 5.1 OWASP   ( A confirmar com a professora) 
 - SQL Injection: ORM + prepared statements.  
 - XSS: escape de saída, CSP.  
 - CSRF: tokens.  
@@ -174,7 +154,7 @@ Usuários acessam via navegador (React) → API (Spring Boot) → PostgreSQL + R
 
 ---
 
-## 9. Integrações e Notificações
+## 9. Integrações e Notificações  ( A confirmar com a professora) 
 
 - Email (SendGrid/SES).  
 - Push Web.  
@@ -214,45 +194,14 @@ Usuários acessam via navegador (React) → API (Spring Boot) → PostgreSQL + R
 
 ---
 
-## 13. Riscos
-
-- Vazamento de dados → mitigação: criptografia.  
-- Dependências vulneráveis → mitigação: SCA.  
-- Baixa adoção → mitigação: MVP enxuto.  
-- Escopo inchado → mitigação: backlog controlado.  
-
----
-
-## 14. Referências
+## 13. Referências
 
 - Brasil. Lei nº 13.709/2018 (LGPD).  
 - OWASP Top 10.  
 - RFC 7519 – JWT.  
 - ISO/IEC 27001.  
-- Sommerville, I. *Software Engineering*.  
-- Pressman, R. *Engenharia de Software*.  
-
----
-
-## 15. Apêndices
-
-### Exemplo de payload (API)
-```json
-POST /api/v1/activities
-{
-  "title": "Limpeza da Piscina",
-  "description": "Limpeza periódica mensal",
-  "condominiumId": "cnd-123",
-  "periodicity": { "type": "MONTHLY", "interval": 1, "day": 7 },
-  "assignedRole": "CONTRACTOR",
-  "notificationBeforeHours": 48
-}
-```
-
-### Exemplo de RBAC
-- ADMIN: cria/edita atividades, aprova reservas.  
-- RESIDENT: solicita reservas, abre chamados.  
-- PROVIDER: executa atividades.  
+- SOMMERVILLE, Ian. *Engenharia de Software*. 10. ed. Pearson, 2011.  
+- PRESSMAN, Roger S. *Engenharia de Software: uma abordagem profissional*. 8. ed. McGraw-Hill, 2016.   
 
 ---
 
