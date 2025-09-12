@@ -59,7 +59,7 @@ Sistema web de gestão condominial com foco em atividades periódicas, reservas 
 - RF06: Disponibilizar dashboard com calendário e relatórios.  
 - RF07: Manter histórico de auditoria de ações.  
 
-### Requisitos Não Funcionais (RNF)  
+### Requisitos Não Funcionais (RNF)   ( A confirmar com a professora) 
 - RNF01: Garantir hospedagem em nuvem com disponibilidade mínima de 95%.  
 - RNF02: Garantir autenticação segura via JWT e hash de senhas.  
 - RNF03: Fornecer interface responsiva e acessível (WCAG 2.1).  
@@ -131,7 +131,7 @@ O modelo C4 será utilizado para representar a arquitetura em níveis (Contexto,
 - Criar protótipos navegáveis no Figma.  
 - Configurar ambiente de desenvolvimento e CI/CD no GitHub Actions.  
 - Implementar MVP com sprints quinzenais (autenticação, atividades, reservas, financeiro).  
-- Testar segurança (OWASP ZAP) e usabilidade com usuários reais.  
+- Testar segurança (OWASP ZAP) e usabilidade com usuários reais.  ( A confirmar com a professora) 
 - Implantar versão piloto em condomínio parceiro para validação.  
 
 ---
