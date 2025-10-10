@@ -1,210 +1,175 @@
-# RFC – SindiGo! - Detalhado
-**Aplicação Web para Gestão de Atividades Condominiais**  
-Centro Universitário Católica de Santa Catarina  
-Aluno: Gustavo Henrique Martins  
-Joinville, SC – 2025  
+# SindiGo! 
+
+## Resumo  
+O **SindiGo!** é uma aplicação web voltada para síndicos e administradoras condominiais que enfrentam desafios na organização de atividades periódicas (ex.: limpeza de piscina, dedetização, manutenção etc.). O projeto fundamenta-se em boas práticas de engenharia de software, segurança da informação (cf. [OWASP Top 10](https://owasp.org/www-project-top-ten/)), conformidade legal ([LGPD](https://www.gov.br/cidadania/pt-br/acesso-a-informacao/lgpd)), e recomendações de arquitetura de sistemas web (cf. SOMMERVILLE, 2011; PRESSMAN, 2016).
 
 ---
 
-## Resumo executivo  
-O SindiGo! é uma aplicação web voltada para síndicos e administradoras de condomínios, cujo objetivo é centralizar o planejamento, execução e registro de atividades periódicas (ex.: limpeza de piscina, dedetização, troca de gás) e pontuais (manutenções, emergências). O sistema também oferecerá funcionalidades complementares como reserva de áreas comuns, registro simplificado de fluxos financeiros, relatórios e mecanismos de auditoria para suporte à gestão. O projeto prioriza segurança (OWASP), privacidade (LGPD), usabilidade e praticidade para o dia a dia do síndico.
+## 1. Introdução  
+
+### Contexto  
+A gestão condominial exige organização de diversas atividades e fluxos de informação. A ausência de ferramentas especializadas leva síndicos a utilizarem planilhas, grupos de mensagens e sistemas genéricos, o que pode resultar em perda de dados, falta de rastreabilidade e vulnerabilidades. (cf. [SOMMERVILLE, Ian. *Engenharia de Software*. 10. ed. Pearson, 2011])
+
+### Justificativa  
+A proposta é fundamentada em três pilares:  
+- **Eficiência:** redução de ruído na comunicação e ganho de produtividade.  
+- **Transparência:** registro de histórico de ações e auditoria para prestação de contas.  
+- **Conformidade:** adequação à LGPD e aplicação de boas práticas de segurança ([OWASP Top 10](https://owasp.org/www-project-top-ten/)).  
+
+### Objetivos  
+
+#### Objetivo Principal  
+Desenvolver um sistema web para gestão condominial, permitindo cadastro de usuários, controle de atividades, reservas de áreas e registros financeiros simplificados.  
+
+#### Metas  
+- Implementar autenticação segura e controle de acessos baseado em papéis.
+- Utilizar hash de senha seguro (SHA-256) ([RFC 6234](https://datatracker.ietf.org/doc/html/rfc6234)).
+- Disponibilizar dashboards intuitivos para visualização de tarefas e reservas.
+- Registrar atividades periódicas e pontuais com rastreabilidade.
+- Incorporar módulo de finanças simplificado com relatórios de entradas/saídas.
+- Garantir escalabilidade e disponibilidade em nuvem.
+- Monitorar e registrar URLs relevantes para auditoria e rastreabilidade.
+- Implementar logs estruturados e centralizados para rastreamento de ações e eventos. ([Sentry](https://sentry.io/welcome/), [Grafana](https://grafana.com/))
 
 ---
 
-## 1. Introdução
+## 2. Descrição do Projeto  
 
-### 1.1 Contexto  
-A rotina de gestão condominial envolve tarefas repetitivas (manutenções preventivas) e eventos pontuais (consertos, emergências). Síndicos normalmente utilizam planilhas, mensagens em grupos e memoriais escritos, o que provoca perda de histórico, dificuldade de prestação de contas e risco legal. Conforme Sommerville (2011), falhas em processos administrativos podem comprometer a confiabilidade das informações e gerar impactos legais e financeiros. O SindiGo! se apresenta como solução prática, centralizando rotinas condominiais em uma plataforma única.
+### Tema  
+Sistema web de gestão condominial com foco em atividades periódicas, reservas e finanças básicas.  
 
-### 1.2 Justificativa  
-- **Eficiência operacional**: centralizar atividades e reservas reduz tempo gasto em coordenação.  
-- **Rastreabilidade**: registros formais essenciais para prestação de contas.  
-- **Segurança**: proteção de dados e controle de acessos reduzem riscos.  
+### Problemas a Resolver  
+- Dificuldade em monitorar atividades recorrentes.  
+- Falta de organização e conflitos na reserva de áreas comuns.  
+- Complexidade na gestão financeira simplificada.  
+- Carência de sistema unificado para síndicos.  
 
-### 1.3 Objetivos  
-**Objetivo Geral**  
-Desenvolver e validar uma aplicação web para gestão de atividades condominiais.  
-
-**Metas Específicas**  
-1. Cadastro e autenticação de síndicos e moradores.  
-2. Registro e execução de atividades periódicas.  
-3. Registro de atividades pontuais e emergenciais.  
-4. Reservas de áreas comuns com regras de conflito.  
-5. Carteira financeira simplificada.  
-6. Relatórios gerenciais e logs de auditoria.  
-7. Conformidade com LGPD e OWASP. ( A confirmar com a professora) 
-8. Interface responsiva e acessível.  
+### Limitações  
+- Não será um ERP financeiro completo.  
+- Não terá aplicativo mobile nativo (apenas web responsivo).  
+- Questões jurídicas e legais específicas não estarão no escopo.  
 
 ---
 
-## 2. Descrição do Projeto
+## 3. Especificação Técnica  
 
-### 2.1 Escopo funcional (MVP)  
-- Gestão de usuários e papéis.  
-- CRUD de condomínios, blocos, unidades.  
-- Gestão de atividades periódicas e pontuais.  
-- Agenda de reservas.  
-- Lançamentos financeiros simples.  
-- Dashboard unificado.  
-- Exportação de relatórios.  
-- Logs de auditoria.  
+### Requisitos Funcionais (RF)  
+- RF01: Permitir cadastro e autenticação de síndicos e moradores com senha protegida por hash SHA-256.
+- RF02: Registrar atividades periódicas com cronogramas.
+- RF03: Registrar atividades pontuais emergenciais.
+- RF04: Controlar reservas de áreas comuns com regras de conflito.
+- RF05: Manter registro financeiro simplificado de entradas e saídas.
+- RF06: Disponibilizar dashboard com calendário e relatórios.
+- RF07: Manter histórico de auditoria de ações e URLs acessadas.
+- RF08: Implementar logs estruturados e centralizados.
 
-### 2.2 Fora do escopo  
-- ERP financeiro completo.  
-- Aplicativo mobile nativo.  
-- Consultoria jurídica.  
-- Integração bancária direta.  
-
-### 2.3 Personas  
-- **Síndico**: administra atividades e reservas.  
-- **Morador**: solicita reservas e abre chamados.  
-- **Administrador**: configura regras e usuários.  
+### Requisitos Não Funcionais (RNF)   (A confirmar com a professora)
+- RNF01: Garantir hospedagem em nuvem com disponibilidade mínima de 95%.
+- RNF02: Garantir autenticação segura via JWT e hash de senhas SHA-256.
+- RNF03: Fornecer interface responsiva e acessível (WCAG 2.1).
+- RNF04: Utilizar banco de dados relacional (PostgreSQL).
+- RNF05: Disponibilizar API REST documentada via OpenAPI ([OpenAPI Specification](https://swagger.io/specification/)).
 
 ---
 
-## 3. Especificação Técnica
+## 4. Stack Tecnológica e Considerações de Design  
 
-### 3.1 Requisitos Funcionais  
-- RF01: Autenticação e autorização.  
-- RF02: Gestão de condomínios/unidades.  
-- RF03: Atividades periódicas.  
-- RF04: Atividades pontuais.  
-- RF05: Reservas de áreas comuns.  
-- RF06: Financeiro simplificado.  
-- RF07: Dashboard e relatórios.  
-- RF08: Auditoria.  
+### Considerações de Design  
+- **Arquitetura em Camadas (MVC):** separação de responsabilidades entre domínio, API e frontend.
+- **API REST:** comunicação entre backend e frontend.
+- **Deploy em containers:** uso de Docker para padronização.
+- **Escalabilidade:** design stateless no backend e uso de cache quando necessário.
+- **Proteção das Rotas:** No backend (ex: Spring Boot), configure o controle de acesso nas rotas
+  - Endpoints públicos: Apenas URLs como /login, /register ou /docs são acessíveis sem autenticação.
+  - Endpoints privados: Todas as outras URLs exigem token JWT válido.
 
-### 3.2 Requisitos Não Funcionais  ( A confirmar com a professora) 
-- Disponibilidade 95% no MVP.  
-- Resposta < 700 ms p95.  
-- Arquitetura escalável.  
-- Segurança OWASP Top 10.  
-- Backup diário com RTO < 4h.  
-- Acessibilidade WCAG AA.  
-
----
-
-## 4. Arquitetura de Software (C4)
-
-### 4.1 Contexto  
-Usuários acessam via navegador (React) → API (Spring Boot) → PostgreSQL + Redis + S3.  
-
-### 4.2 Containers  
-- Frontend (React).  
-- Backend API (Spring Boot).  
-- Worker/Jobs.  
-- Banco de dados (Postgres).  
-- Cache (Redis).  
-- Object Storage (S3).  
-
-### 4.3 Componentes internos  
-- Auth, Activities, Reservations, Finance, Notifications, Admin.  
+### Tecnologias Utilizadas  
+| Camada         | Tecnologias                            |
+|----------------|---------------------------------------|
+| Linguagens     | Java, JavaScript/TypeScript           |
+| Backend        | Spring Boot, Hibernate                |
+| Frontend       | React, Tailwind CSS                   |
+| Banco de Dados | PostgreSQL                            |
+| Containerização| Docker                                |
+| CI/CD          | GitHub Actions                        |
+| Monitoramento  | Prometheus, Grafana, Sentry           |
 
 ---
 
-## 5. Segurança e Conformidade
+## 5. Diagramas de Caso de Uso (UML)  
 
-### 5.1 OWASP   ( A confirmar com a professora) 
-- SQL Injection: ORM + prepared statements.  
-- XSS: escape de saída, CSP.  
-- CSRF: tokens.  
-- Dependências seguras.  
-- Logs mascarando PII.  
-- Criptografia TLS + AES-256.  
+### Caso de Uso 1: Cadastro e Autenticação  
+*(Diagrama a ser incluído no apêndice)*  
 
-### 5.2 LGPD  
-- Consentimento explícito.  
-- Direito de exclusão.  
-- Política de retenção.  
-- Acordos de processamento com provedores.  
+### Caso de Uso 2: Gestão de Atividades  
+*(Diagrama a ser incluído no apêndice)*  
+
+### Caso de Uso 3: Reservas de Áreas Comuns  
+*(Diagrama a ser incluído no apêndice)*  
 
 ---
 
-## 6. Observabilidade e Backup
+## 6. Modelagem C4  
 
-### 6.1 Observabilidade  
-- Métricas Prometheus/Grafana.  
-- Logs estruturados JSON.  
-- Tracing distribuído.  
-- Alertas de erro > 1%.  
+O modelo C4 será utilizado para representar a arquitetura em níveis (Contexto, Containers, Componentes e Código).  
 
-### 6.2 Backup  
-- Dumps + WAL.  
-- Testes trimestrais.  
-- Retenção configurável.  
+- **Contexto:** usuários (síndicos e moradores) acessam a aplicação via navegador.
+- **Containers:** frontend (React) e backend (Spring Boot) conectados ao PostgreSQL.
+- **Componentes:** módulos de autenticação, atividades, reservas, finanças e auditoria.
+- **Código:** orientado a DDD, SOLID e testes automatizados.
+
+*(Diagramas C4 a serem adicionados em anexo)*  
 
 ---
 
-## 7. Infraestrutura e Deploy
+## 7. Considerações de Segurança  
 
-- Docker multi-stage builds.  
-- Registry privado.  
-- Deploy inicial em VM/Compose, futuro em Kubernetes.  
-- GitHub Actions CI/CD com stages.  
-
----
-
-## 8. Qualidade e Testes
-
-- Unit tests (JUnit/Jest).  
-- Integration tests (TestContainers).  
-- E2E (Cypress).  
-- Performance (k6).  
-- Security (SAST/DAST).  
+- **HTTPS obrigatório** em todas as comunicações.
+- **Autenticação JWT + RBAC** para controle de acesso.
+- **Proteção contra ataques comuns:** prevenção de SQL Injection, XSS e CSRF ([OWASP Top 10](https://owasp.org/www-project-top-ten/)).
+- **Senhas armazenadas com hash SHA-256** ([RFC 6234](https://datatracker.ietf.org/doc/html/rfc6234)), nunca em texto puro.
+- **Conformidade com LGPD:** coleta mínima de dados, consentimento explícito e direito de exclusão.
+- **Monitoramento contínuo:** auditoria de acessos, URLs e logs estruturados ([Sentry](https://sentry.io/welcome/)).
 
 ---
 
-## 9. Integrações e Notificações  ( A confirmar com a professora) 
+## 8. Próximos Passos  
 
-- Email (SendGrid/SES).  
-- Push Web.  
-- WhatsApp/SMS via API.  
-- Importação CSV.  
-- Webhooks externos.  
-
----
-
-## 10. UX e Acessibilidade
-
-- Design system (Storybook).  
-- WCAG AA.  
-- Internacionalização.  
-- Testes de usabilidade.  
+- Refinar os requisitos funcionais e diagramas UML.
+- Criar protótipos navegáveis no Figma.
+- Configurar ambiente de desenvolvimento e CI/CD no GitHub Actions.
+- Implementar MVP com sprints quinzenais (autenticação, atividades, reservas, financeiro).
+- Testar segurança (OWASP ZAP) e usabilidade com usuários reais.  (A confirmar com a professora)
+- Implantar versão piloto em condomínio parceiro para validação.
 
 ---
 
-## 11. Licenciamento e Ética
+## 9. Referências  
 
-- Código sob licença MIT.  
-- Uso apenas de OSS compatível.  
-- Política de privacidade clara.  
-- Plano de resposta a incidentes.  
+### Frameworks e Bibliotecas  
+- [Spring Boot](https://spring.io/projects/spring-boot)
+- [React.js](https://reactjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Docker](https://www.docker.com/)
+- [GitHub Actions](https://github.com/features/actions)
 
----
+### Segurança e Conformidade  
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+- [LGPD – Lei nº 13.709/2018](https://www.gov.br/cidadania/pt-br/acesso-a-informacao/lgpd)
+- [RFC 6234 - SHA-256](https://datatracker.ietf.org/doc/html/rfc6234)
+- [OpenAPI Specification](https://swagger.io/specification/)
+- [Sentry - Monitoramento de Logs](https://sentry.io/welcome/)
+- [Grafana - Observabilidade](https://grafana.com/)
 
-## 12. Roadmap
-
-- **Fase 0:** Preparação.  
-- **Fase 1:** Prototipação.  
-- **Fase 2:** Infra e backlog.  
-- **Fase 3:** MVP (8–12 semanas).  
-- **Fase 4:** Testes e segurança.  
-- **Fase 5:** Validação.  
-- **Fase 6:** Documentação e entrega.  
-
----
-
-## 13. Referências
-
-- Brasil. Lei nº 13.709/2018 (LGPD).  
-- OWASP Top 10.  
-- RFC 7519 – JWT.  
-- ISO/IEC 27001.  
-- SOMMERVILLE, Ian. *Engenharia de Software*. 10. ed. Pearson, 2011.  
-- PRESSMAN, Roger S. *Engenharia de Software: uma abordagem profissional*. 8. ed. McGraw-Hill, 2016.   
+### Livros e Artigos  
+- SOMMERVILLE, Ian. *Engenharia de Software*. 10. ed. Pearson, 2011.
+- PRESSMAN, Roger S. *Engenharia de Software: uma abordagem profissional*. 8. ed. McGraw-Hill, 2016.
 
 ---
 
-## Autor
+## 10. Autor  
+
 **Gustavo Henrique Martins**  
 Curso: Engenharia de Software – Católica de Santa Catarina  
+Orientadores: Professores: 
