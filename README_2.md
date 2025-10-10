@@ -72,7 +72,13 @@ Sistema web de gestão condominial com foco em atividades periódicas, reservas 
 
 ---
 
+###3.1 Hospedagem acessível publicamente
+
+A aplicação será hospedada em ambiente de nuvem com acesso público via HTTPS, permitindo que usuários possam acessá-la a partir de qualquer localidade com conexão à internet. O acesso será realizado por meio de URLs públicas, restritas por mecanismos de autenticação e autorização, garantindo que apenas usuários autenticados possam acessar funcionalidades privadas do sistema.
+
 ## 4. Stack Tecnológica e Considerações de Design  
+
+---
 
 ### Considerações de Design  
 - **Arquitetura em Camadas (MVC):** separação de responsabilidades entre domínio, API e frontend.
