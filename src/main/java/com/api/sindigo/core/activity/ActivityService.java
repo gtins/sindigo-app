@@ -3,6 +3,7 @@ package com.api.sindigo.core.activity;
 import com.api.sindigo.core.activity.dto.ActivityCreateDTO;
 import com.api.sindigo.core.activity.dto.ActivityResponseDTO;
 import com.api.sindigo.core.activity.entities.Activity;
+import com.api.sindigo.core.activity.mapper.ActivityDtoMapper;
 import com.api.sindigo.core.building.BuildingRepository;
 import com.api.sindigo.core.building.entities.Building;
 import lombok.RequiredArgsConstructor;
@@ -30,25 +31,14 @@ public class ActivityService {
 
         Activity saved = activityRepository.save(activity);
 
-        return toResponseDTO(saved);
+        return ActivityDtoMapper.toResponseDTO(saved);
     }
 
     // LIST
     public List<ActivityResponseDTO> listByBuilding(Long buildingId) {
         return activityRepository.findByBuildingId(buildingId)
                 .stream()
-                .map(this::toResponseDTO)
+                .map(ActivityDtoMapper::toResponseDTO)
                 .toList();
-    }
-
-    // Mapper simples
-    private ActivityResponseDTO toResponseDTO(Activity activity) {
-        ActivityResponseDTO dto = new ActivityResponseDTO();
-        dto.setId(activity.getId());
-        dto.setTitle(activity.getTitle());
-        dto.setDescription(activity.getDescription());
-        dto.setCompleted(activity.getCompleted());
-        dto.setCreatedAt(activity.getCreatedAt());
-        return dto;
     }
 }

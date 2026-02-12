@@ -1,18 +1,46 @@
 package com.api.sindigo.core.user.entities;
 
+import com.api.sindigo.core.attachment.entities.Attachment;
+import com.api.sindigo.core.membership.entities.Membership;
+import com.api.sindigo.core.reservation.entities.Reservation;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Entity
-@Data
-@Table(name = "sindigo_users")
+@Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
-    @Column(name="username", unique = true)
-    private String username;
-    @Column(name="password")
-    private String password;
+    @Id
+    @GeneratedValue
+    private UUID id;
+
+    private String name;
+
+    @Column(unique = true)
+    private String email;
+
+    private String passwordHash;
+
+    @CreationTimestamp
+    private Instant createdAt;
+
+    @OneToMany(mappedBy = "user")
+    private List<Membership> condominiums = new ArrayList<>();
+
+    @OneToMany(mappedBy = "requestedBy")
+    private List<Reservation> reservations = new ArrayList<>();
+
+    @OneToMany(mappedBy = "uploadedBy")
+    private List<Attachment> uploads = new ArrayList<>();
 }
+

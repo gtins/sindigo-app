@@ -1,23 +1,49 @@
 package com.api.sindigo.core.building.entities;
 
+import com.api.sindigo.core.activity.entities.Activity;
+import com.api.sindigo.core.financialentry.entities.FinancialEntry;
+import com.api.sindigo.core.membership.entities.Membership;
+import com.api.sindigo.core.reservation.entities.Reservation;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Entity
-@Data
-@Table(name = "sindigo_buildings")
+@Table(name = "condominiums")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Building {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    private UUID id;
 
-    @Column(name= "name", unique = false)
     private String name;
-    @Column(name="adress", unique = false)
-    private String adress;
-    @Column(name="active", unique = false)
-    private Boolean active;
-    @Column(name="date", unique = false)
-    private String date;
+    private String address;
 
+    @CreationTimestamp
+    private Instant createdAt;
+
+    // 1 -> N Activities
+    @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
+    private List<Activity> activities = new ArrayList<>();
+
+    // 1 -> N CondoUser
+    @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
+    private List<Membership> members = new ArrayList<>();
+
+    // 1 -> N Reservations
+    @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
+    private List<Reservation> reservations = new ArrayList<>();
+
+    // 1 -> N Financial Entries
+    @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
+    private List<FinancialEntry> financialEntries = new ArrayList<>();
 }
