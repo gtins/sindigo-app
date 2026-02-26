@@ -4,8 +4,9 @@ import com.api.sindigo.core.activity.entities.Activity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.UUID;
 
-public interface ActivityRepository extends JpaRepository<Activity, Long> {
+public interface ActivityRepository extends JpaRepository<Activity, UUID> {
 
-    List<Activity> findByBuildingId(Long buildingId);
+    List<Activity> findByBuildingId(UUID buildingId);
 }

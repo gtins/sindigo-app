@@ -5,6 +5,7 @@ import com.api.sindigo.core.building.entities.Building;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -24,7 +25,7 @@ public class FinancialEntry {
     private UUID id;
 
     @Enumerated(EnumType.STRING)
-    private FinancialType type;
+    private FinancialEntryType type;
 
     private BigDecimal amount;
     private LocalDate date;
@@ -33,8 +34,11 @@ public class FinancialEntry {
     @CreationTimestamp
     private Instant createdAt;
 
+    @UpdateTimestamp
+    private Instant updatedAt;
+
     @ManyToOne
-    @JoinColumn(name = "building_id")
+    @JoinColumn(name = "building_id", nullable = false)
     private Building building;
 
     @OneToOne

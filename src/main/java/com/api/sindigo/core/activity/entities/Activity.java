@@ -5,9 +5,9 @@ import com.api.sindigo.core.building.entities.Building;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -22,7 +22,7 @@ import java.util.UUID;
 public class Activity {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     private String title;
@@ -37,8 +37,11 @@ public class Activity {
     @CreationTimestamp
     private Instant createdAt;
 
+    @UpdateTimestamp
+    private Instant updatedAt;
+
     @ManyToOne
-    @JoinColumn(name = "building_id")
+    @JoinColumn(name = "building_id", nullable = false)
     private Building building;
 
     @OneToMany(mappedBy = "activity", cascade = CascadeType.ALL)

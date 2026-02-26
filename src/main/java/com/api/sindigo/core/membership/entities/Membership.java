@@ -5,6 +5,7 @@ import com.api.sindigo.core.user.entities.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import javax.management.relation.Role;
 import java.time.Instant;
 import java.util.UUID;
@@ -27,6 +28,9 @@ public class Membership {
 
     @CreationTimestamp
     private Instant createdAt;
+
+    @UpdateTimestamp
+    private Instant updatedAt;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

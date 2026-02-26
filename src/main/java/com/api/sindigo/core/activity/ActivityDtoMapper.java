@@ -3,8 +3,6 @@ package com.api.sindigo.core.activity;
 import com.api.sindigo.core.activity.dto.ActivityResponseDTO;
 import com.api.sindigo.core.activity.entities.Activity;
 
-import java.time.LocalDateTime;
-
 public class ActivityDtoMapper {
 
     private ActivityDtoMapper() {
@@ -14,11 +12,13 @@ public class ActivityDtoMapper {
     public static ActivityResponseDTO toResponseDTO(Activity activity) {
         ActivityResponseDTO dto = new ActivityResponseDTO();
         dto.setId(activity.getId());
+        dto.setBuildingId(activity.getBuilding().getId());
         dto.setTitle(activity.getTitle());
         dto.setDescription(activity.getDescription());
-        dto.setCompleted(activity.getInstances().stream()
-                .allMatch(instance -> instance.getStatus() == com.api.sindigo.core.activity.entities.ActivityStatus.COMPLETED));
-        dto.setCreatedAt(LocalDateTime.from(activity.getCreatedAt()));
+        dto.setType(activity.getType());
+        dto.setStartDate(activity.getStartDate());
+        dto.setEndDate(activity.getEndDate());
+        dto.setCreatedAt(activity.getCreatedAt());
         return dto;
     }
 }
