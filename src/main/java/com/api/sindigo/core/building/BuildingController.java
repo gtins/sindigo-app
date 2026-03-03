@@ -1,13 +1,18 @@
 package com.api.sindigo.core.building;
 
-import com.api.sindigo.core.building.entities.Building;
+import com.api.sindigo.core.building.dto.BuildingCreateDTO;
+import com.api.sindigo.core.building.dto.BuildingResponseDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("/building")
+@RequestMapping("/condominiums")
 @RequiredArgsConstructor
 public class BuildingController {
 
@@ -15,19 +20,24 @@ public class BuildingController {
 
     // CREATE
     @PostMapping
-    public Building create(@RequestBody Building building) {
-        return buildingService.createBuilding(building);
+    public ResponseEntity<BuildingResponseDTO> create(@Valid @RequestBody BuildingCreateDTO dto) {
+        BuildingResponseDTO response = buildingService.createBuilding(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // READ
+    // READ ALL
     @GetMapping
-    public List<Building> list() {
-        return buildingService.listBuildings();
+    public ResponseEntity<List<BuildingResponseDTO>> list() {
+        List<BuildingResponseDTO> response = buildingService.listBuildings();
+        return ResponseEntity.ok(response);
     }
 
-    // READ
+    // READ BY ID
     @GetMapping("/{id}")
-    public Building getById(@PathVariable Long id) {
-        return buildingService.getById(id);
+    public ResponseEntity<BuildingResponseDTO> getById(@PathVariable UUID id) {
+        BuildingResponseDTO response = buildingService.getById(id);
+        return ResponseEntity.ok(response);
     }
 }
+
+
