@@ -1,7 +1,7 @@
 package com.api.sindigo.core.financialentry.entities;
 
 import com.api.sindigo.core.attachment.entities.Attachment;
-import com.api.sindigo.core.building.entities.Building;
+import com.api.sindigo.core.condominium.entities.Condominium;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -38,8 +38,8 @@ public class FinancialEntry {
     private Instant updatedAt;
 
     @ManyToOne
-    @JoinColumn(name = "building_id", nullable = false)
-    private Building building;
+    @JoinColumn(name = "condominium_id", nullable = false)
+    private Condominium condominium;
 
     @OneToOne
     @JoinColumn(name = "attachment_id")

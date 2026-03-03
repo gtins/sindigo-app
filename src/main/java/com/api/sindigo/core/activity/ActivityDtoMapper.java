@@ -12,7 +12,7 @@ public class ActivityDtoMapper {
     public static ActivityResponseDTO toResponseDTO(Activity activity) {
         ActivityResponseDTO dto = new ActivityResponseDTO();
         dto.setId(activity.getId());
-        dto.setBuildingId(activity.getBuilding().getId());
+        dto.setCondominiumId(activity.getCondominium().getId());
         dto.setTitle(activity.getTitle());
         dto.setDescription(activity.getDescription());
         dto.setType(activity.getType());

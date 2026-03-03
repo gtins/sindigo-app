@@ -14,7 +14,7 @@ public class ActivityResponseDTO {
     private UUID id;
 
     @JsonProperty("condominium_id")
-    private UUID buildingId;
+    private UUID condominiumId;
 
     private String title;
     private String description;

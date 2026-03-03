@@ -1,9 +1,5 @@
-package com.api.sindigo.core.building.entities;
+package com.api.sindigo.core.condominium.entities;
 
-// DEPRECATED: Use com.api.sindigo.core.condominium.entities.Condominium instead
-// This class is kept for reference only and should be deleted
-
-/*
 import com.api.sindigo.core.activity.entities.Activity;
 import com.api.sindigo.core.financialentry.entities.FinancialEntry;
 import com.api.sindigo.core.membership.entities.Membership;
@@ -24,7 +20,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Building {
+public class Condominium {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -40,7 +36,7 @@ public class Building {
     private Instant updatedAt;
 
     // 1 -> N Activities
-    @OneToMany(mappedBy = "building", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
     private List<Activity> activities = new ArrayList<>();
 
     // 1 -> N CondoUser
@@ -55,5 +51,4 @@ public class Building {
     @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
     private List<FinancialEntry> financialEntries = new ArrayList<>();
 }
-*/
 

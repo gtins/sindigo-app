@@ -3,8 +3,8 @@ package com.api.sindigo.core.activity;
 import com.api.sindigo.core.activity.dto.ActivityCreateDTO;
 import com.api.sindigo.core.activity.dto.ActivityResponseDTO;
 import com.api.sindigo.core.activity.entities.Activity;
-import com.api.sindigo.core.building.BuildingRepository;
-import com.api.sindigo.core.building.entities.Building;
+import com.api.sindigo.core.condominium.CondominiumRepository;
+import com.api.sindigo.core.condominium.entities.Condominium;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +16,13 @@ import java.util.UUID;
 public class ActivityService {
 
     private final ActivityRepository activityRepository;
-    private final BuildingRepository buildingRepository;
+    private final CondominiumRepository condominiumRepository;
 
     // CREATE - Para endpoint POST /condominiums/{id}/activities
-    public ActivityResponseDTO addActivity(UUID buildingId, ActivityCreateDTO dto) {
+    public ActivityResponseDTO addActivity(UUID condominiumId, ActivityCreateDTO dto) {
         // Buscar condomínio
-        Building building = buildingRepository.findById(buildingId)
-                .orElseThrow(() -> new IllegalArgumentException("Building not found with id: " + buildingId));
+        Condominium condominium = condominiumRepository.findById(condominiumId)
+                .orElseThrow(() -> new IllegalArgumentException("Condominium not found with id: " + condominiumId));
 
         // Validar start_date < end_date
         if (dto.getStartDate().isAfter(dto.getEndDate())) {
@@ -36,7 +36,7 @@ public class ActivityService {
         activity.setType(dto.getType());
         activity.setStartDate(dto.getStartDate());
         activity.setEndDate(dto.getEndDate());
-        activity.setBuilding(building);
+        activity.setCondominium(condominium);
 
         // Salvar atividade
         Activity saved = activityRepository.save(activity);
@@ -45,8 +45,8 @@ public class ActivityService {
     }
 
     // LIST
-    public List<ActivityResponseDTO> listByBuilding(UUID buildingId) {
-        return activityRepository.findByBuildingId(buildingId)
+    public List<ActivityResponseDTO> listByCondominium(UUID condominiumId) {
+        return activityRepository.findByCondominiumId(condominiumId)
                 .stream()
                 .map(ActivityDtoMapper::toResponseDTO)
                 .toList();

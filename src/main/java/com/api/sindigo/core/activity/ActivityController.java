@@ -28,11 +28,11 @@ public class ActivityController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // LIST - GET /building/activities
-    @GetMapping("/building/activities")
+    // LIST - GET /condominiums/{id}/activities
+    @GetMapping("/condominiums/{id}/activities")
     public List<ActivityResponseDTO> list(
-            @RequestParam UUID buildingId
+            @PathVariable UUID id
     ) {
-        return activityService.listByBuilding(buildingId);
+        return activityService.listByCondominium(id);
     }
 }

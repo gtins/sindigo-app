@@ -1,7 +1,7 @@
 package com.api.sindigo.core.reservation.entities;
 
 import com.api.sindigo.core.attachment.entities.Attachment;
-import com.api.sindigo.core.building.entities.Building;
+import com.api.sindigo.core.condominium.entities.Condominium;
 import com.api.sindigo.core.user.entities.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -37,8 +37,8 @@ public class Reservation {
     private Instant updatedAt;
 
     @ManyToOne
-    @JoinColumn(name = "building_id")
-    private Building building;
+    @JoinColumn(name = "condominium_id")
+    private Condominium condominium;
 
     @ManyToOne
     @JoinColumn(name = "requested_by")
