@@ -2,12 +2,15 @@ package com.api.sindigo.core.financialentry;
 
 import com.api.sindigo.core.condominium.CondominiumRepository;
 import com.api.sindigo.core.condominium.entities.Condominium;
+import com.api.sindigo.core.financialentry.dto.BalanceResponseDTO;
 import com.api.sindigo.core.financialentry.dto.FinancialEntryCreateDTO;
 import com.api.sindigo.core.financialentry.dto.FinancialEntryResponseDTO;
 import com.api.sindigo.core.financialentry.entities.FinancialEntry;
+import com.api.sindigo.core.financialentry.entities.FinancialEntryType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,5 +53,28 @@ public class FinancialEntryService {
                 .stream()
                 .map(financialEntryDtoMapper::toResponseDTO)
                 .toList();
+    }
+
+    // GET BALANCE - Para endpoint GET /condominiums/{id}/balance
+    public BalanceResponseDTO getBalance(UUID condominiumId) {
+        // Validar se condomínio existe
+        Condominium condominium = condominiumRepository.findById(condominiumId)
+                .orElseThrow(() -> new IllegalArgumentException("Condominium not found with id: " + condominiumId));
+
+        // Somar receitas (INCOME)
+        BigDecimal totalIncome = financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.INCOME);
+
+        // Somar despesas (EXPENSE)
+        BigDecimal totalExpense = financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.EXPENSE);
+
+        // Calcular saldo líquido (receitas - despesas)
+        BigDecimal netBalance = totalIncome.subtract(totalExpense);
+
+        return BalanceResponseDTO.builder()
+                .condominiumId(condominiumId)
+                .totalIncome(totalIncome)
+                .totalExpense(totalExpense)
+                .netBalance(netBalance)
+                .build();
     }
 }

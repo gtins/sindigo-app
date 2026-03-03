@@ -1,5 +1,6 @@
 package com.api.sindigo.core.financialentry;
 
+import com.api.sindigo.core.financialentry.dto.BalanceResponseDTO;
 import com.api.sindigo.core.financialentry.dto.FinancialEntryCreateDTO;
 import com.api.sindigo.core.financialentry.dto.FinancialEntryResponseDTO;
 import jakarta.validation.Valid;
@@ -34,5 +35,14 @@ public class FinancialEntryController {
             @PathVariable UUID id
     ) {
         return financialEntryService.listByCondominium(id);
+    }
+
+    // GET BALANCE - GET /condominiums/{id}/balance
+    @GetMapping("/condominiums/{id}/balance")
+    public ResponseEntity<BalanceResponseDTO> getBalance(
+            @PathVariable UUID id
+    ) {
+        BalanceResponseDTO response = financialEntryService.getBalance(id);
+        return ResponseEntity.ok(response);
     }
 }
