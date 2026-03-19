@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -20,23 +20,18 @@ public class ReservationResponseDTO {
 
     private UUID id;
 
-    @JsonProperty("condominium_id")
     private UUID condominiumId;
 
     private String area;
 
-    @JsonProperty("start_time")
-    private Instant startTime;
+    private LocalDate startTime;
 
-    @JsonProperty("end_time")
-    private Instant endTime;
+    private LocalDate endTime;
 
     private ReservationStatus status;
 
-    @JsonProperty("requested_by")
     private UUID requestedBy;
 
-    @JsonProperty("created_at")
-    private Instant createdAt;
+    private LocalDate createdAt;
 }
 

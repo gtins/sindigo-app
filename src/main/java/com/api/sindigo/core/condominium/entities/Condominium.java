@@ -8,7 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -30,24 +30,20 @@ public class Condominium {
     private String address;
 
     @CreationTimestamp
-    private Instant createdAt;
+    private LocalDate createdAt;
 
     @UpdateTimestamp
-    private Instant updatedAt;
+    private LocalDate updatedAt;
 
-    // 1 -> N Activities
     @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
     private List<Activity> activities = new ArrayList<>();
 
-    // 1 -> N CondoUser
     @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
     private List<Membership> members = new ArrayList<>();
 
-    // 1 -> N Reservations
     @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
     private List<Reservation> reservations = new ArrayList<>();
 
-    // 1 -> N Financial Entries
     @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
     private List<FinancialEntry> financialEntries = new ArrayList<>();
 }

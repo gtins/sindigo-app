@@ -17,14 +17,12 @@ public class CondominiumService {
     private final CondominiumRepository condominiumRepository;
     private final CondominiumDtoMapper condominiumDtoMapper;
 
-    // CREATE
     public CondominiumResponseDTO createCondominium(CondominiumCreateDTO dto) {
         Condominium condominium = condominiumDtoMapper.toDomain(dto);
         Condominium savedCondominium = condominiumRepository.save(condominium);
         return condominiumDtoMapper.toResponse(savedCondominium);
     }
 
-    // READ
     public List<CondominiumResponseDTO> listCondominiums() {
         return condominiumRepository.findAll()
                 .stream()
@@ -32,7 +30,6 @@ public class CondominiumService {
                 .collect(Collectors.toList());
     }
 
-    // READ
     public CondominiumResponseDTO getById(UUID id) {
         Condominium condominium = condominiumRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Condominium not found"));

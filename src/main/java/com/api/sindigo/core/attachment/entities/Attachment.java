@@ -4,7 +4,7 @@ import com.api.sindigo.core.user.entities.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -23,7 +23,7 @@ public class Attachment {
     private String filePath;
 
     @CreationTimestamp
-    private Instant uploadedAt;
+    private LocalDate uploadedAt;
 
     @ManyToOne
     @JoinColumn(name = "uploaded_by")

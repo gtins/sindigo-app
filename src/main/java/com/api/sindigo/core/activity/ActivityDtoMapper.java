@@ -6,7 +6,6 @@ import com.api.sindigo.core.activity.entities.Activity;
 public class ActivityDtoMapper {
 
     private ActivityDtoMapper() {
-        // impede instanciação
     }
 
     public static ActivityResponseDTO toResponseDTO(Activity activity) {

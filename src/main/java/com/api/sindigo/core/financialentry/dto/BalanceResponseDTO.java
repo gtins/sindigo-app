@@ -17,16 +17,12 @@ import java.util.UUID;
 @Builder
 public class BalanceResponseDTO {
 
-    @JsonProperty("condominium_id")
     private UUID condominiumId;
 
-    @JsonProperty("total_income")
     private BigDecimal totalIncome;
 
-    @JsonProperty("total_expense")
     private BigDecimal totalExpense;
 
-    @JsonProperty("net_balance")
     private BigDecimal netBalance;
 }
 

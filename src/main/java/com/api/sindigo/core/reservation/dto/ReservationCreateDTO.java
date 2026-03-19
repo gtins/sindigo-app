@@ -1,6 +1,5 @@
 package com.api.sindigo.core.reservation.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -9,7 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.Instant;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -22,11 +21,9 @@ public class ReservationCreateDTO {
     private String area;
 
     @NotNull(message = "Start time is required")
-    @JsonProperty("start_time")
-    private Instant startTime;
+    private LocalDate startTime;
 
     @NotNull(message = "End time is required")
-    @JsonProperty("end_time")
-    private Instant endTime;
+    private LocalDate endTime;
 }
 

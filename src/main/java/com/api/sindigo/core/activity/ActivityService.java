@@ -18,18 +18,14 @@ public class ActivityService {
     private final ActivityRepository activityRepository;
     private final CondominiumRepository condominiumRepository;
 
-    // CREATE - Para endpoint POST /condominiums/{id}/activities
     public ActivityResponseDTO addActivity(UUID condominiumId, ActivityCreateDTO dto) {
-        // Buscar condomínio
         Condominium condominium = condominiumRepository.findById(condominiumId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found with id: " + condominiumId));
 
-        // Validar start_date < end_date
         if (dto.getStartDate().isAfter(dto.getEndDate())) {
             throw new IllegalArgumentException("Start date must be before end date");
         }
 
-        // Vincular entidade
         Activity activity = new Activity();
         activity.setTitle(dto.getTitle());
         activity.setDescription(dto.getDescription());
@@ -38,13 +34,11 @@ public class ActivityService {
         activity.setEndDate(dto.getEndDate());
         activity.setCondominium(condominium);
 
-        // Salvar atividade
         Activity saved = activityRepository.save(activity);
 
         return ActivityDtoMapper.toResponseDTO(saved);
     }
 
-    // LIST
     public List<ActivityResponseDTO> listByCondominium(UUID condominiumId) {
         return activityRepository.findByCondominiumId(condominiumId)
                 .stream()

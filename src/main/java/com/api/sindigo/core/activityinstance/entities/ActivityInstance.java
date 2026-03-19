@@ -6,7 +6,7 @@ import com.api.sindigo.core.attachment.entities.Attachment;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -22,7 +22,7 @@ public class ActivityInstance {
     @GeneratedValue
     private UUID id;
 
-    private Instant scheduledAt;
+    private LocalDate scheduledAt;
 
     @Enumerated(EnumType.STRING)
     private ActivityStatus status;
@@ -31,7 +31,7 @@ public class ActivityInstance {
     private String notes;
 
     @CreationTimestamp
-    private Instant createdAt;
+    private LocalDate createdAt;
 
     @ManyToOne
     @JoinColumn(name = "activity_id")

@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -22,7 +21,6 @@ public class FinancialEntryResponseDTO {
 
     private UUID id;
 
-    @JsonProperty("condominium_id")
     private UUID condominiumId;
 
     private FinancialEntryType type;
@@ -30,7 +28,6 @@ public class FinancialEntryResponseDTO {
     private LocalDate date;
     private String description;
 
-    @JsonProperty("created_at")
-    private Instant createdAt;
+    private LocalDate createdAt;
 }
 

@@ -22,13 +22,10 @@ public class ReservationService {
     private final CondominiumRepository condominiumRepository;
     private final ReservationDtoMapper reservationDtoMapper;
 
-    // CREATE - Para endpoint POST /reservations
     public ReservationResponseDTO createReservation(UUID condominiumId, ReservationCreateDTO dto) {
-        // Buscar condomínio
         Condominium condominium = condominiumRepository.findById(condominiumId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found with id: " + condominiumId));
 
-        // Validar conflito de horário
         if (dto.getStartTime().isAfter(dto.getEndTime())) {
             throw new IllegalArgumentException("Start time must be before end time");
         }
@@ -44,7 +41,6 @@ public class ReservationService {
             throw new IllegalArgumentException("There is already a reservation for this area in the requested time slot");
         }
 
-        // Criar reserva com status PENDING
         Reservation reservation = new Reservation();
         reservation.setCondominium(condominium);
         reservation.setArea(dto.getArea());
@@ -52,13 +48,11 @@ public class ReservationService {
         reservation.setEndTime(dto.getEndTime());
         reservation.setStatus(ReservationStatus.PENDING);
 
-        // Salvar reserva
         Reservation saved = reservationRepository.save(reservation);
 
         return reservationDtoMapper.toResponseDTO(saved);
     }
 
-    // LIST com filtro de status - Para endpoint GET /condominiums/{id}/reservations?status=...
     public Page<ReservationResponseDTO> listByCondominiumAndStatus(UUID condominiumId, ReservationStatus status, Pageable pageable) {
         Page<Reservation> page = reservationRepository.findByCondominiumIdAndStatusOrderByStartTimeDesc(
                 condominiumId,

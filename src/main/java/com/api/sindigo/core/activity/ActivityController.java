@@ -18,7 +18,6 @@ public class ActivityController {
 
     private final ActivityService activityService;
 
-    // CREATE - POST /condominiums/{id}/activities
     @PostMapping("/condominiums/{id}/activities")
     public ResponseEntity<ActivityResponseDTO> createActivity(
             @PathVariable UUID id,
@@ -28,7 +27,6 @@ public class ActivityController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // LIST - GET /condominiums/{id}/activities
     @GetMapping("/condominiums/{id}/activities")
     public List<ActivityResponseDTO> list(
             @PathVariable UUID id

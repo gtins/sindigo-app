@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -18,6 +18,6 @@ public class CondominiumResponseDTO {
     private UUID id;
     private String name;
     private String address;
-    private Instant createdAt;
+    private LocalDate createdAt;
 }
 

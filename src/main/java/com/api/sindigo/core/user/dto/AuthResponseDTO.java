@@ -2,7 +2,7 @@ package com.api.sindigo.core.user.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -17,7 +17,7 @@ public class AuthResponseDTO {
     private String email;
 
     @JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
-    private Instant createdAt;
+    private LocalDate createdAt;
 
     private String message;
 }
