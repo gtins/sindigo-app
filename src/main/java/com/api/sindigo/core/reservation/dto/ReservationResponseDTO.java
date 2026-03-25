@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -24,14 +25,14 @@ public class ReservationResponseDTO {
 
     private String area;
 
-    private LocalDate startTime;
+    private LocalDateTime startTime;
 
-    private LocalDate endTime;
+    private LocalDateTime endTime;
 
     private ReservationStatus status;
 
     private UUID requestedBy;
 
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
 }
 

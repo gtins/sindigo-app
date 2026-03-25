@@ -6,10 +6,12 @@ import com.api.sindigo.core.reservation.dto.ReservationCreateDTO;
 import com.api.sindigo.core.reservation.dto.ReservationResponseDTO;
 import com.api.sindigo.core.reservation.entities.Reservation;
 import com.api.sindigo.core.reservation.entities.ReservationStatus;
+import com.api.sindigo.core.reservation.validator.ReservationValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,14 +23,14 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final CondominiumRepository condominiumRepository;
     private final ReservationDtoMapper reservationDtoMapper;
+    private final ReservationValidator reservationValidator;
 
+    @Transactional
     public ReservationResponseDTO createReservation(UUID condominiumId, ReservationCreateDTO dto) {
+        reservationValidator.validateReservationCreation(dto);
+
         Condominium condominium = condominiumRepository.findById(condominiumId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found with id: " + condominiumId));
-
-        if (dto.getStartTime().isAfter(dto.getEndTime())) {
-            throw new IllegalArgumentException("Start time must be before end time");
-        }
 
         List<Reservation> conflicts = reservationRepository.findConflictingReservations(
                 condominiumId,
@@ -37,9 +39,7 @@ public class ReservationService {
                 dto.getEndTime()
         );
 
-        if (!conflicts.isEmpty()) {
-            throw new IllegalArgumentException("There is already a reservation for this area in the requested time slot");
-        }
+        reservationValidator.validateNoConflicts(!conflicts.isEmpty());
 
         Reservation reservation = new Reservation();
         reservation.setCondominium(condominium);
@@ -53,6 +53,7 @@ public class ReservationService {
         return reservationDtoMapper.toResponseDTO(saved);
     }
 
+    @Transactional(readOnly = true)
     public Page<ReservationResponseDTO> listByCondominiumAndStatus(UUID condominiumId, ReservationStatus status, Pageable pageable) {
         Page<Reservation> page = reservationRepository.findByCondominiumIdAndStatusOrderByStartTimeDesc(
                 condominiumId,
@@ -62,7 +63,7 @@ public class ReservationService {
         return page.map(reservationDtoMapper::toResponseDTO);
     }
 
-    // LIST sem filtro - Para endpoint GET /condominiums/{id}/reservations
+    @Transactional(readOnly = true)
     public Page<ReservationResponseDTO> listByCondominium(UUID condominiumId, Pageable pageable) {
         Page<Reservation> page = reservationRepository.findByCondominiumIdOrderByStartTimeDesc(
                 condominiumId,

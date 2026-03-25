@@ -7,8 +7,10 @@ import com.api.sindigo.core.financialentry.dto.FinancialEntryCreateDTO;
 import com.api.sindigo.core.financialentry.dto.FinancialEntryResponseDTO;
 import com.api.sindigo.core.financialentry.entities.FinancialEntry;
 import com.api.sindigo.core.financialentry.entities.FinancialEntryType;
+import com.api.sindigo.core.financialentry.validator.FinancialEntryValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -21,19 +23,15 @@ public class FinancialEntryService {
     private final FinancialEntryRepository financialEntryRepository;
     private final CondominiumRepository condominiumRepository;
     private final FinancialEntryDtoMapper financialEntryDtoMapper;
+    private final FinancialEntryValidator financialEntryValidator;
 
-    // CREATE - Para endpoint POST /condominiums/{id}/financial-entries
+    @Transactional
     public FinancialEntryResponseDTO addFinancialEntry(UUID condominiumId, FinancialEntryCreateDTO dto) {
-        // Buscar condomínio
+        financialEntryValidator.validateFinancialEntryCreation(dto);
+
         Condominium condominium = condominiumRepository.findById(condominiumId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found with id: " + condominiumId));
 
-        // Validação: amount > 0
-        if (dto.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than 0");
-        }
-
-        // Vincular entidade
         FinancialEntry financialEntry = new FinancialEntry();
         financialEntry.setType(dto.getType());
         financialEntry.setAmount(dto.getAmount());
@@ -41,13 +39,12 @@ public class FinancialEntryService {
         financialEntry.setDescription(dto.getDescription());
         financialEntry.setCondominium(condominium);
 
-        // Salvar entrada financeira
         FinancialEntry saved = financialEntryRepository.save(financialEntry);
 
         return financialEntryDtoMapper.toResponseDTO(saved);
     }
 
-    // LIST
+    @Transactional(readOnly = true)
     public List<FinancialEntryResponseDTO> listByCondominium(UUID condominiumId) {
         return financialEntryRepository.findByCondominiumId(condominiumId)
                 .stream()
@@ -55,19 +52,15 @@ public class FinancialEntryService {
                 .toList();
     }
 
-    // GET BALANCE - Para endpoint GET /condominiums/{id}/balance
+    @Transactional(readOnly = true)
     public BalanceResponseDTO getBalance(UUID condominiumId) {
-        // Validar se condomínio existe
         Condominium condominium = condominiumRepository.findById(condominiumId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found with id: " + condominiumId));
 
-        // Somar receitas (INCOME)
         BigDecimal totalIncome = financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.INCOME);
 
-        // Somar despesas (EXPENSE)
         BigDecimal totalExpense = financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.EXPENSE);
 
-        // Calcular saldo líquido (receitas - despesas)
         BigDecimal netBalance = totalIncome.subtract(totalExpense);
 
         return BalanceResponseDTO.builder()
