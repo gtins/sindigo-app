@@ -6,7 +6,7 @@ import com.api.sindigo.core.reservation.entities.Reservation;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -32,7 +32,7 @@ public class User {
     private String passwordHash;
 
     @CreationTimestamp
-    private Instant createdAt;
+    private LocalDate createdAt;
 
     @OneToMany(mappedBy = "user")
     private List<Membership> condominiums = new ArrayList<>();

@@ -11,18 +11,18 @@ import java.util.UUID;
 @Data
 public class ActivityCreateDTO {
 
-    @NotBlank(message = "Title é obrigatório")
+    @NotBlank(message = "Título é obrigatório")
     private String title;
 
-    @NotBlank(message = "Description é obrigatória")
+    @NotBlank(message = "Descrição é obrigatória")
     private String description;
 
     @NotNull(message = "Type é obrigatório")
     private ActivityType type;
 
-    @NotNull(message = "Start date é obrigatória")
+    @NotNull(message = "Data de início é obrigatória")
     private LocalDate startDate;
 
-    @NotNull(message = "End date é obrigatória")
+    @NotNull(message = "Data de término é obrigatória")
     private LocalDate endDate;
 }

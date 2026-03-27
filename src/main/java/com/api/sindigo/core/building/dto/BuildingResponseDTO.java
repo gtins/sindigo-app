@@ -1,5 +1,9 @@
 package com.api.sindigo.core.building.dto;
 
+// DEPRECATED: Use com.api.sindigo.core.condominium.dto.CondominiumResponseDTO instead
+// This class is kept for reference only and should be deleted
+
+/*
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,4 +24,6 @@ public class BuildingResponseDTO {
     private String address;
     private Instant createdAt;
 }
+*/
+
 

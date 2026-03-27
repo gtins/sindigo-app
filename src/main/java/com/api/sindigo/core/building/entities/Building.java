@@ -1,5 +1,9 @@
 package com.api.sindigo.core.building.entities;
 
+// DEPRECATED: Use com.api.sindigo.core.condominium.entities.Condominium instead
+// This class is kept for reference only and should be deleted
+
+/*
 import com.api.sindigo.core.activity.entities.Activity;
 import com.api.sindigo.core.financialentry.entities.FinancialEntry;
 import com.api.sindigo.core.membership.entities.Membership;
@@ -51,3 +55,5 @@ public class Building {
     @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
     private List<FinancialEntry> financialEntries = new ArrayList<>();
 }
+*/
+

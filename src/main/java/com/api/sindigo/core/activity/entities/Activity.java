@@ -1,12 +1,11 @@
 package com.api.sindigo.core.activity.entities;
 
 import com.api.sindigo.core.activityinstance.entities.ActivityInstance;
-import com.api.sindigo.core.building.entities.Building;
+import com.api.sindigo.core.condominium.entities.Condominium;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,14 +34,14 @@ public class Activity {
     private LocalDate endDate;
 
     @CreationTimestamp
-    private Instant createdAt;
+    private LocalDate createdAt;
 
     @UpdateTimestamp
-    private Instant updatedAt;
+    private LocalDate updatedAt;
 
     @ManyToOne
-    @JoinColumn(name = "building_id", nullable = false)
-    private Building building;
+    @JoinColumn(name = "condominium_id", nullable = false)
+    private Condominium condominium;
 
     @OneToMany(mappedBy = "activity", cascade = CascadeType.ALL)
     private List<ActivityInstance> instances = new ArrayList<>();

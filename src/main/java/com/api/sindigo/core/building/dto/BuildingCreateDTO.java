@@ -1,5 +1,9 @@
 package com.api.sindigo.core.building.dto;
 
+// DEPRECATED: Use com.api.sindigo.core.condominium.dto.CondominiumCreateDTO instead
+// This class is kept for reference only and should be deleted
+
+/*
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,4 +24,6 @@ public class BuildingCreateDTO {
     @NotBlank(message = "Address is required")
     private String address;
 }
+*/
+
 

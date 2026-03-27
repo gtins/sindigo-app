@@ -1,5 +1,9 @@
 package com.api.sindigo.core.building;
 
+// DEPRECATED: Use com.api.sindigo.core.condominium.CondominiumService instead
+// This class is kept for reference only and should be deleted
+
+/*
 import com.api.sindigo.core.building.dto.BuildingCreateDTO;
 import com.api.sindigo.core.building.dto.BuildingResponseDTO;
 import com.api.sindigo.core.building.entities.Building;
@@ -39,5 +43,7 @@ public class BuildingService {
         return buildingDtoMapper.toResponse(building);
     }
 }
+*/
+
 
 

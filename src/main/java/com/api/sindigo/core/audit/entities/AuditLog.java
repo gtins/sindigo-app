@@ -5,7 +5,7 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -29,7 +29,7 @@ public class AuditLog {
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
-    private Instant createdDate;
+    private LocalDate createdDate;
 
     @CreatedBy
     @Column(nullable = false, updatable = false)

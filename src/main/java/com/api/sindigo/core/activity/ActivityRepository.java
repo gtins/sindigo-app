@@ -8,5 +8,5 @@ import java.util.UUID;
 
 public interface ActivityRepository extends JpaRepository<Activity, UUID> {
 
-    List<Activity> findByBuildingId(UUID buildingId);
+    List<Activity> findByCondominiumId(UUID condominiumId);
 }

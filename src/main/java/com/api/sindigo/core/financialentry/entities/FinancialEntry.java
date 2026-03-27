@@ -1,13 +1,12 @@
 package com.api.sindigo.core.financialentry.entities;
 
 import com.api.sindigo.core.attachment.entities.Attachment;
-import com.api.sindigo.core.building.entities.Building;
+import com.api.sindigo.core.condominium.entities.Condominium;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -32,14 +31,14 @@ public class FinancialEntry {
     private String description;
 
     @CreationTimestamp
-    private Instant createdAt;
+    private LocalDate createdAt;
 
     @UpdateTimestamp
-    private Instant updatedAt;
+    private LocalDate updatedAt;
 
     @ManyToOne
-    @JoinColumn(name = "building_id", nullable = false)
-    private Building building;
+    @JoinColumn(name = "condominium_id", nullable = false)
+    private Condominium condominium;
 
     @OneToOne
     @JoinColumn(name = "attachment_id")

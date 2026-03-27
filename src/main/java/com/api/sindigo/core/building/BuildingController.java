@@ -1,5 +1,9 @@
 package com.api.sindigo.core.building;
 
+// DEPRECATED: Use com.api.sindigo.core.condominium.CondominiumController instead
+// This class is kept for reference only and should be deleted
+
+/*
 import com.api.sindigo.core.building.dto.BuildingCreateDTO;
 import com.api.sindigo.core.building.dto.BuildingResponseDTO;
 import lombok.RequiredArgsConstructor;
@@ -39,5 +43,7 @@ public class BuildingController {
         return ResponseEntity.ok(response);
     }
 }
+*/
+
 
 
