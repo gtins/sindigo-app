@@ -1,9 +1,13 @@
 package com.api.sindigo.core.user;
 
+import com.api.sindigo.core.auth.dto.LoginResponseDTO;
+import com.api.sindigo.core.auth.security.JwtTokenProvider;
 import com.api.sindigo.core.user.dto.AuthResponseDTO;
+import com.api.sindigo.core.user.dto.LoginRequestDTO;
 import com.api.sindigo.core.user.dto.RegisterRequestDTO;
 import com.api.sindigo.core.user.entities.User;
 import com.api.sindigo.core.user.validator.UserValidator;
+import com.api.sindigo.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +19,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserValidator userValidator;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
     public User createUser(User user) {
@@ -46,7 +51,26 @@ public class UserService {
                 .message("Usuário cadastrado com sucesso")
                 .build();
     }
+
+    @Transactional(readOnly = true)
+    public LoginResponseDTO loginUser(LoginRequestDTO dto) {
+        // Buscar usuário por email
+        User user = userRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("Credenciais inválidas"));
+
+        // Validar senha
+        if (!passwordEncoder.matches(dto.getPassword(), user.getPasswordHash())) {
+            throw new ResourceNotFoundException("Credenciais inválidas");
+        }
+
+        // Gerar token JWT
+        String token = jwtTokenProvider.generateToken(user);
+        long expirationSeconds = jwtTokenProvider.getExpirationTime();
+
+        return LoginResponseDTO.builder()
+                .token(token)
+                .type("Bearer")
+                .expiresIn(expirationSeconds)
+                .build();
+    }
 }
-
-
-
