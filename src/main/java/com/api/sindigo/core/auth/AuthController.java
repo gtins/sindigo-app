@@ -1,9 +1,12 @@
 package com.api.sindigo.core.auth;
 
+import com.api.sindigo.core.auth.dto.LoginResponseDTO;
+import com.api.sindigo.core.auth.security.JwtService;
 import com.api.sindigo.core.user.UserService;
 import com.api.sindigo.core.user.dto.AuthResponseDTO;
 import com.api.sindigo.core.user.dto.LoginRequestDTO;
 import com.api.sindigo.core.user.dto.RegisterRequestDTO;
+import com.api.sindigo.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +22,7 @@ import java.util.Map;
 public class AuthController {
 
     private final UserService userService;
+    private final JwtService jwtService;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDTO dto) {
@@ -36,9 +40,47 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
-        // TODO: Implementar login com JWT
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO dto) {
+        try {
+            LoginResponseDTO response = userService.loginUser(dto);
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException e) {
+            // Credenciais inválidas
+            Map<String, Object> error = new HashMap<>();
+            error.put("timestamp", java.time.Instant.now());
+            error.put("status", HttpStatus.UNAUTHORIZED.value());
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+    }
+
+    @GetMapping("/validate")
+    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("valid", false, "reason", "Token não fornecido"));
+            }
+
+            String token = authHeader.substring(7);
+            JwtService.JwtValidationResponse validation = jwtService.validateToken(token);
+
+            if (validation.isValid()) {
+                return ResponseEntity.ok(Map.of(
+                        "valid", true,
+                        "expiresAt", validation.getExpiresAt()
+                ));
+            } else {
+                return ResponseEntity.ok(Map.of(
+                        "valid", false,
+                        "reason", validation.getReason()
+                ));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("valid", false, "reason", "Erro ao validar token"));
+        }
     }
 }
+
 
