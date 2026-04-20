@@ -15,9 +15,20 @@ public class ActivityDtoMapper {
         dto.setTitle(activity.getTitle());
         dto.setDescription(activity.getDescription());
         dto.setType(activity.getType());
+        dto.setOrigin(activity.getOrigin());
         dto.setStartDate(activity.getStartDate());
         dto.setEndDate(activity.getEndDate());
         dto.setCreatedAt(activity.getCreatedAt());
+        dto.setUpdatedAt(activity.getUpdatedAt());
+        dto.setCreatedById(activity.getCreatedBy().getId());
+        if (activity.getTicket() != null) {
+            dto.setTicketId(activity.getTicket().getId());
+        }
+        if (activity.getProvider() != null) {
+            dto.setProviderId(activity.getProvider().getId());
+        }
         return dto;
     }
 }
+
+

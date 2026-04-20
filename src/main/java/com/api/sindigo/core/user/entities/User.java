@@ -1,6 +1,7 @@
 package com.api.sindigo.core.user.entities;
 
 import com.api.sindigo.core.attachment.entities.Attachment;
+import com.api.sindigo.core.condominium.entities.Condominium;
 import com.api.sindigo.core.membership.entities.Membership;
 import com.api.sindigo.core.reservation.entities.Reservation;
 import jakarta.persistence.*;
@@ -33,6 +34,9 @@ public class User {
 
     @CreationTimestamp
     private LocalDate createdAt;
+
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+    private List<Condominium> ownedCondominiums = new ArrayList<>();
 
     @OneToMany(mappedBy = "user")
     private List<Membership> condominiums = new ArrayList<>();
