@@ -1,5 +1,6 @@
 package com.api.sindigo.core.reservation;
 
+import com.api.sindigo.core.reservation.dto.ReservationApprovalDTO;
 import com.api.sindigo.core.reservation.dto.ReservationCreateDTO;
 import com.api.sindigo.core.reservation.dto.ReservationResponseDTO;
 import com.api.sindigo.core.reservation.entities.ReservationStatus;
@@ -22,13 +23,13 @@ public class ReservationController {
 
     private final ReservationService reservationService;
 
-    // CREATE - POST /reservations
-    @PostMapping("/reservations")
+    // CREATE - POST /condominiums/{id}/reservations
+    @PostMapping("/condominiums/{id}/reservations")
     public ResponseEntity<ReservationResponseDTO> createReservation(
-            @RequestParam UUID condominiumId,
+            @PathVariable UUID id,
             @Valid @RequestBody ReservationCreateDTO dto
     ) {
-        ReservationResponseDTO response = reservationService.createReservation(condominiumId, dto);
+        ReservationResponseDTO response = reservationService.createReservation(id, dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -47,6 +48,17 @@ public class ReservationController {
             response = reservationService.listByCondominium(id, pageable);
         }
 
+        return ResponseEntity.ok(response);
+    }
+
+    // APPROVE/REJECT - PATCH /condominiums/{condominiumId}/reservations/{reservationId}
+    @PatchMapping("/condominiums/{condominiumId}/reservations/{reservationId}")
+    public ResponseEntity<ReservationResponseDTO> approveReservation(
+            @PathVariable UUID condominiumId,
+            @PathVariable UUID reservationId,
+            @Valid @RequestBody ReservationApprovalDTO dto
+    ) {
+        ReservationResponseDTO response = reservationService.approveReservation(condominiumId, reservationId, dto);
         return ResponseEntity.ok(response);
     }
 }

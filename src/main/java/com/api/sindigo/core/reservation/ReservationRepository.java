@@ -36,4 +36,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
             @Param("startTime") @NotNull(message = "Start time is required") LocalDateTime startTime,
             @Param("endTime") @NotNull(message = "End time is required") LocalDateTime endTime
     );
+
+    java.util.Optional<Reservation> findByIdAndCondominiumId(UUID id, UUID condominiumId);
 }
