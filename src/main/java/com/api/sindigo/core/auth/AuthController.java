@@ -4,6 +4,7 @@ import com.api.sindigo.core.auth.dto.LoginResponseDTO;
 import com.api.sindigo.core.auth.security.JwtService;
 import com.api.sindigo.core.user.UserService;
 import com.api.sindigo.core.user.dto.AuthResponseDTO;
+import com.api.sindigo.core.user.dto.CreateAdminRequestDTO;
 import com.api.sindigo.core.user.dto.LoginRequestDTO;
 import com.api.sindigo.core.user.dto.RegisterRequestDTO;
 import com.api.sindigo.exception.ResourceNotFoundException;
@@ -51,6 +52,21 @@ public class AuthController {
             error.put("status", HttpStatus.UNAUTHORIZED.value());
             error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+    }
+
+    @PostMapping("/create-admin")
+    public ResponseEntity<?> createAdmin(@Valid @RequestBody CreateAdminRequestDTO dto) {
+        try {
+            AuthResponseDTO response = userService.createAdmin(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            // Erro de validação ou chave secreta inválida
+            Map<String, Object> error = new HashMap<>();
+            error.put("timestamp", java.time.Instant.now());
+            error.put("status", HttpStatus.FORBIDDEN.value());
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
         }
     }
 
