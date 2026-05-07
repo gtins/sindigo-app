@@ -18,7 +18,7 @@ public class AuthResponseDTO {
     private String email;
     private UserRole role;
 
-    @JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+    @JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "UTC")
     private LocalDate createdAt;
 
     private String message;
