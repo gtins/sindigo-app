@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 public class UserController {
 
     private static final String USER_NOT_FOUND = "Usuário não encontrado";
+    private static final String INVALID_USER_ID = "ID de usuário inválido";
     private static final String TIMESTAMP = "timestamp";
     private static final String STATUS = "status";
     private static final String ERROR = "error";
@@ -66,7 +67,7 @@ public class UserController {
             
             String userId = (String) principal;
             User user = userRepository.findById(UUID.fromString(userId))
-                    .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+                    .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
             UserResponseDTO response = UserResponseDTO.builder()
                     .id(user.getId())
@@ -87,7 +88,7 @@ public class UserController {
             Map<String, Object> error = new HashMap<>();
             error.put(TIMESTAMP, java.time.Instant.now());
             error.put(STATUS, HttpStatus.BAD_REQUEST.value());
-            error.put(ERROR, "ID de usuário inválido");
+            error.put(ERROR, INVALID_USER_ID);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
@@ -128,7 +129,7 @@ public class UserController {
             Map<String, Object> error = new HashMap<>();
             error.put(TIMESTAMP, java.time.Instant.now());
             error.put(STATUS, HttpStatus.BAD_REQUEST.value());
-            error.put(ERROR, "ID de usuário inválido");
+            error.put(ERROR, INVALID_USER_ID);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
@@ -185,7 +186,7 @@ public class UserController {
             Map<String, Object> error = new HashMap<>();
             error.put(TIMESTAMP, java.time.Instant.now());
             error.put(STATUS, HttpStatus.BAD_REQUEST.value());
-            error.put(ERROR, "ID de usuário inválido");
+            error.put(ERROR, INVALID_USER_ID);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
