@@ -38,7 +38,7 @@ public class SecurityConfig {
             "http://localhost:8080"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(java.util.Collections.singletonList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
@@ -48,9 +48,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    @SuppressWarnings("java:S4502") // CSRF desabilitado é seguro em REST API com JWT (não usa sessão/cookies)
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {  // throws Exception é padrão Spring Security
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // CSRF é desabilitado com segurança em REST APIs com autenticação JWT porque:
+            // 1) JWT é stateless - não usa cookies de sessão (principal vetor de ataque CSRF)
+            // 2) Token é armazenado em memoria/localStorage (controlado pela app, não pelo navegador)
+            // 3) Token é enviado explicitamente no header Authorization (não enviado automaticamente)
+            // 4) CSRF clássico só afeta aplicações com sessão state-full (uso de cookies)
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/auth/**", "/admin/audit/debug").permitAll()

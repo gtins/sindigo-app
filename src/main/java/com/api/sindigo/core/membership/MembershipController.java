@@ -18,6 +18,8 @@ import java.util.UUID;
 @Slf4j
 public class MembershipController {
 
+    private static final String ERROR = "error";
+
     private final MembershipService membershipService;
 
     /**
@@ -35,7 +37,7 @@ public class MembershipController {
             // Validar se é ADMIN ou SINDICO
             if (!isAdminOrSindico(authentication)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "Apenas ADMIN e SINDICO podem adicionar moradores"));
+                        .body(Map.of(ERROR, "Apenas ADMIN e SINDICO podem adicionar moradores"));
             }
 
             MembershipResponseDTO response = membershipService.addMember(condominiumId, userId);
@@ -43,10 +45,10 @@ public class MembershipController {
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", e.getMessage()));
+                    .body(Map.of(ERROR, e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Erro ao adicionar morador"));
+                    .body(Map.of(ERROR, "Erro ao adicionar morador"));
         }
     }
 
@@ -63,7 +65,7 @@ public class MembershipController {
             // Validar se é ADMIN ou SINDICO
             if (!isAdminOrSindico(authentication)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "Apenas ADMIN e SINDICO podem listar moradores"));
+                        .body(Map.of(ERROR, "Apenas ADMIN e SINDICO podem listar moradores"));
             }
 
             List<MembershipResponseDTO> members = membershipService.getMembers(condominiumId);
@@ -71,7 +73,7 @@ public class MembershipController {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Erro ao listar moradores"));
+                    .body(Map.of(ERROR, "Erro ao listar moradores"));
         }
     }
 
@@ -90,7 +92,7 @@ public class MembershipController {
             // Validar se é ADMIN
             if (!isAdmin(authentication)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "Apenas ADMIN pode remover moradores"));
+                        .body(Map.of(ERROR, "Apenas ADMIN pode remover moradores"));
             }
 
             membershipService.removeMember(condominiumId, userId);
@@ -98,7 +100,7 @@ public class MembershipController {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Erro ao remover morador"));
+                    .body(Map.of(ERROR, "Erro ao remover morador"));
         }
     }
 
@@ -113,13 +115,13 @@ public class MembershipController {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("error", "Usuário não autenticado"));
+                        .body(Map.of(ERROR, "Usuário não autenticado"));
             }
 
             Object principal = authentication.getPrincipal();
             if (principal == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("error", "Usuário não autenticado"));
+                        .body(Map.of(ERROR, "Usuário não autenticado"));
             }
 
             String userId = (String) principal;
@@ -128,11 +130,10 @@ public class MembershipController {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Erro ao buscar condomínios"));
+                    .body(Map.of(ERROR, "Erro ao buscar condomínios"));
         }
     }
 
-    // Helper methods
     private boolean isAdmin(Authentication auth) {
         if (auth == null || !auth.isAuthenticated()) return false;
         return auth.getAuthorities().stream()

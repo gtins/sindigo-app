@@ -36,6 +36,7 @@ public class AuditAspect {
                     """,
             returning = "result"
     )
+    @SuppressWarnings("unused")
     public void auditOperation(JoinPoint joinPoint, Object result) {
         try {
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -57,7 +58,10 @@ public class AuditAspect {
             if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
                 userEmail = auth.getName();
                 userRole = auth.getAuthorities().stream()
-                        .map(a -> a.getAuthority().replace("ROLE_", ""))
+                        .map(a -> {
+                            String authority = a.getAuthority();
+                            return authority != null ? authority.replace("ROLE_", "") : "UNKNOWN";
+                        })
                         .findFirst()
                         .orElse("UNKNOWN");
             }
@@ -87,27 +91,23 @@ public class AuditAspect {
                     .build();
 
             auditLogRepository.save(auditLog);
-            log.info("✓ AUDITADO: {} {} - {} [{}]", method, uri, userEmail, userRole);
+            log.info("AUDITADO: {} {} - {} [{}]", method, uri, userEmail, userRole);
 
         } catch (Exception e) {
-            log.error("✗ Erro auditoria", e);
+            log.error("Erro auditoria", e);
         }
     }
 
     private String buildAuditJson(String userEmail, String userRole, String action, String dados) {
         try {
             ObjectNode node = objectMapper.createObjectNode();
-            node.put("quem", userEmail);
-            node.put("role", userRole);
-            node.put("acao", action);
-            node.put("quando", LocalDateTime.now().toString());
+            node.put("Quem", userEmail);
+            node.put("Role", userRole);
+            node.put("Acao", action);
+            node.put("Quando", LocalDateTime.now().toString());
             
             if (dados != null && !dados.equals("{}")) {
-                try {
-                    node.set("dados", objectMapper.readTree(dados));
-                } catch (Exception e) {
-                    node.put("dados", dados);
-                }
+                addDadosToNode(node, dados);
             }
             
             return objectMapper.writeValueAsString(node);
@@ -116,18 +116,20 @@ public class AuditAspect {
         }
     }
 
+    private void addDadosToNode(ObjectNode node, String dados) {
+        try {
+            node.set("dados", objectMapper.readTree(dados));
+        } catch (Exception e) {
+            node.put("dados", dados);
+        }
+    }
+
     private String extractData(Object result) {
         try {
             Object data = result;
             
             // Se é ResponseEntity, pega o body
-            try {
-                Field bodyField = result.getClass().getDeclaredField("body");
-                bodyField.setAccessible(true);
-                data = bodyField.get(result);
-            } catch (NoSuchFieldException e) {
-                // Não é ResponseEntity
-            }
+            data = extractResponseEntityBody(result, data);
 
             if (data != null) {
                 return objectMapper.writeValueAsString(data);
@@ -136,6 +138,20 @@ public class AuditAspect {
             log.debug("Erro extrair dados");
         }
         return "{}";
+    }
+
+    private Object extractResponseEntityBody(Object result, Object data) {
+        try {
+            Field bodyField = result.getClass().getDeclaredField("body");
+            bodyField.setAccessible(true);
+            return bodyField.get(result);
+        } catch (NoSuchFieldException e) {
+            // Não é ResponseEntity, retorna data como está
+            return data;
+        } catch (IllegalAccessException e) {
+            log.trace("Acesso negado ao campo body: {}", e.getMessage());
+            return data;
+        }
     }
 
     private String getAction(String httpMethod) {
@@ -161,7 +177,10 @@ public class AuditAspect {
         for (String part : parts) {
             try {
                 return UUID.fromString(part);
-            } catch (IllegalArgumentException ignored) {}
+            } catch (IllegalArgumentException e) {
+                // Parte não é um UUID válido, continua iterando
+                log.trace("Parte não é UUID: {}", part);
+            }
         }
         return null;
     }

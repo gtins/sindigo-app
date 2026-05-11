@@ -19,6 +19,9 @@ import java.util.Map;
 @Slf4j
 public class AuditController {
 
+    private static final String ERROR = "error";
+    private static final String ONLY_ADMIN_CAN_ACCESS_AUDIT = "Apenas ADMIN pode acessar auditoria";
+
     private final AuditLogRepository auditLogRepository;
 
     /**
@@ -35,7 +38,7 @@ public class AuditController {
             // Validar se é ADMIN
             if (!isAdmin(authentication)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "Apenas ADMIN pode acessar auditoria"));
+                        .body(Map.of(ERROR, ONLY_ADMIN_CAN_ACCESS_AUDIT));
             }
 
             Pageable pageable = PageRequest.of(page, size);
@@ -45,7 +48,7 @@ public class AuditController {
         } catch (Exception e) {
             log.error("Erro ao buscar logs de auditoria", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
+                    .body(Map.of(ERROR, e.getMessage()));
         }
     }
 
@@ -63,7 +66,7 @@ public class AuditController {
         try {
             if (!isAdmin(authentication)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "Apenas ADMIN pode acessar auditoria"));
+                        .body(Map.of(ERROR, ONLY_ADMIN_CAN_ACCESS_AUDIT));
             }
 
             Pageable pageable = PageRequest.of(page, size);
@@ -73,7 +76,7 @@ public class AuditController {
         } catch (Exception e) {
             log.error("Erro ao buscar logs por usuário", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
+                    .body(Map.of(ERROR, e.getMessage()));
         }
     }
 
@@ -91,7 +94,7 @@ public class AuditController {
         try {
             if (!isAdmin(authentication)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "Apenas ADMIN pode acessar auditoria"));
+                        .body(Map.of(ERROR, ONLY_ADMIN_CAN_ACCESS_AUDIT));
             }
 
             Pageable pageable = PageRequest.of(page, size);
@@ -101,7 +104,7 @@ public class AuditController {
         } catch (Exception e) {
             log.error("Erro ao buscar logs por recurso", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
+                    .body(Map.of(ERROR, e.getMessage()));
         }
     }
 
@@ -119,7 +122,7 @@ public class AuditController {
         try {
             if (!isAdmin(authentication)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "Apenas ADMIN pode acessar auditoria"));
+                        .body(Map.of(ERROR, ONLY_ADMIN_CAN_ACCESS_AUDIT));
             }
 
             Pageable pageable = PageRequest.of(page, size);
@@ -129,20 +132,24 @@ public class AuditController {
         } catch (Exception e) {
             log.error("Erro ao buscar logs por ação", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
+                    .body(Map.of(ERROR, e.getMessage()));
         }
     }
 
     /**
      * Valida se o usuário é ADMIN
      */
+    @SuppressWarnings("java:S2447")
     private boolean isAdmin(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return false;
         }
 
         return authentication.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+                .anyMatch(auth -> {
+                    String authority = auth.getAuthority();
+                    return authority != null && authority.equals("ROLE_ADMIN");
+                });
     }
 }
 

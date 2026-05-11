@@ -8,6 +8,8 @@ import com.api.sindigo.core.condominium.validator.CondominiumValidator;
 import com.api.sindigo.core.membership.MembershipService;
 import com.api.sindigo.core.user.UserRepository;
 import com.api.sindigo.core.user.entities.User;
+import com.api.sindigo.exception.BusinessRuleException;
+import com.api.sindigo.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,7 +37,7 @@ public class CondominiumService {
 
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
         User owner = userRepository.findById(authenticatedUserId)
-                .orElseThrow(() -> new IllegalStateException("Usuário autenticado não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário autenticado não encontrado"));
 
         Condominium condominium = condominiumDtoMapper.toDomain(dto);
         condominium.setOwner(owner);
@@ -65,7 +67,7 @@ public class CondominiumService {
 
         // Buscar condomínio
         Condominium condominium = condominiumRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Condominium not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Condominium not found"));
 
         // Verificar se é owner
         boolean isOwner = condominium.getOwner().getId().equals(authenticatedUserId);
@@ -79,7 +81,7 @@ public class CondominiumService {
         // Permitir acesso apenas se for owner ou membro
         if (!isOwner && !isMember) {
             log.warn("X Access Denied: User {} trying to access condominium {}", authenticatedUserId, id);
-            throw new RuntimeException("You don't have access to this condominium");
+            throw new BusinessRuleException("You don't have access to this condominium");
         }
 
         log.info("✓ Access Granted to condominium {}", id);
