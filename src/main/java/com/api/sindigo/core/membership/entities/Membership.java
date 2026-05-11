@@ -4,38 +4,35 @@ import com.api.sindigo.core.condominium.entities.Condominium;
 import com.api.sindigo.core.user.entities.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import java.time.LocalDate;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "condo_users")
+@Table(name = "memberships")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Membership {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Enumerated(EnumType.STRING)
-    private MembershipRole role;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "condominium_id", nullable = false)
+    private Condominium condominium;
 
-    @CreationTimestamp
-    private LocalDate createdAt;
-
-    @UpdateTimestamp
-    private LocalDate updatedAt;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "condominium_id")
-    private Condominium condominium;
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime joinedAt;
 }

@@ -4,6 +4,7 @@ import com.api.sindigo.core.auth.dto.LoginResponseDTO;
 import com.api.sindigo.core.auth.security.JwtService;
 import com.api.sindigo.core.user.UserService;
 import com.api.sindigo.core.user.dto.AuthResponseDTO;
+import com.api.sindigo.core.user.dto.CreateAdminRequestDTO;
 import com.api.sindigo.core.user.dto.LoginRequestDTO;
 import com.api.sindigo.core.user.dto.RegisterRequestDTO;
 import com.api.sindigo.exception.ResourceNotFoundException;
@@ -21,6 +22,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 
+    private static final String TIMESTAMP = "timestamp";
+    private static final String STATUS = "status";
+    private static final String ERROR = "error";
+
     private final UserService userService;
     private final JwtService jwtService;
 
@@ -32,9 +37,9 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             // Email duplicado
             Map<String, Object> error = new HashMap<>();
-            error.put("timestamp", java.time.Instant.now());
-            error.put("status", HttpStatus.CONFLICT.value());
-            error.put("error", e.getMessage());
+            error.put(TIMESTAMP, java.time.Instant.now());
+            error.put(STATUS, HttpStatus.CONFLICT.value());
+            error.put(ERROR, e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         }
     }
@@ -47,10 +52,25 @@ public class AuthController {
         } catch (ResourceNotFoundException e) {
             // Credenciais inválidas
             Map<String, Object> error = new HashMap<>();
-            error.put("timestamp", java.time.Instant.now());
-            error.put("status", HttpStatus.UNAUTHORIZED.value());
-            error.put("error", e.getMessage());
+            error.put(TIMESTAMP, java.time.Instant.now());
+            error.put(STATUS, HttpStatus.UNAUTHORIZED.value());
+            error.put(ERROR, e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+    }
+
+    @PostMapping("/create-admin")
+    public ResponseEntity<?> createAdmin(@Valid @RequestBody CreateAdminRequestDTO dto) {
+        try {
+            AuthResponseDTO response = userService.createAdmin(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            // Erro de validação ou chave secreta inválida
+            Map<String, Object> error = new HashMap<>();
+            error.put(TIMESTAMP, java.time.Instant.now());
+            error.put(STATUS, HttpStatus.FORBIDDEN.value());
+            error.put(ERROR, e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
         }
     }
 

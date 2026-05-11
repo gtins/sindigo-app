@@ -1,0 +1,18 @@
+package com.api.sindigo.core.user.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class CreateAdminRequestDTO {
+    private String name;
+    private String email;
+    private String password;
+    private String secretKey; // Chave secreta para criar admin
+}
+

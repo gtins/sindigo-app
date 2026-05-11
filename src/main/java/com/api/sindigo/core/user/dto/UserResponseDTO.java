@@ -1,28 +1,23 @@
 package com.api.sindigo.core.user.dto;
 
 import com.api.sindigo.core.user.entities.UserRole;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 import java.util.UUID;
 
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AuthResponseDTO {
-
+public class UserResponseDTO {
     private UUID id;
     private String name;
     private String email;
     private UserRole role;
-
-    @JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "UTC")
     private LocalDate createdAt;
-
-    private String message;
 }
-
-
 

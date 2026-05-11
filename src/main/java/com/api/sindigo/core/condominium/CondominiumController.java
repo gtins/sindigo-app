@@ -5,6 +5,7 @@ import com.api.sindigo.core.condominium.dto.CondominiumResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ public class CondominiumController {
 
     // CREATE
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SINDICO')")
     public ResponseEntity<CondominiumResponseDTO> create(@Valid @RequestBody CondominiumCreateDTO dto) {
         CondominiumResponseDTO response = condominiumService.createCondominium(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
