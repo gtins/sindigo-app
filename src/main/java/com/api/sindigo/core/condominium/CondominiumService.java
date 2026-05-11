@@ -5,9 +5,11 @@ import com.api.sindigo.core.condominium.dto.CondominiumCreateDTO;
 import com.api.sindigo.core.condominium.dto.CondominiumResponseDTO;
 import com.api.sindigo.core.condominium.entities.Condominium;
 import com.api.sindigo.core.condominium.validator.CondominiumValidator;
+import com.api.sindigo.core.membership.MembershipService;
 import com.api.sindigo.core.user.UserRepository;
 import com.api.sindigo.core.user.entities.User;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CondominiumService {
 
     private final CondominiumRepository condominiumRepository;
@@ -24,6 +27,7 @@ public class CondominiumService {
     private final CondominiumValidator condominiumValidator;
     private final SecurityContextHelper securityContextHelper;
     private final UserRepository userRepository;
+    private final MembershipService membershipService;
 
     @Transactional
     public CondominiumResponseDTO createCondominium(CondominiumCreateDTO dto) {
@@ -55,9 +59,30 @@ public class CondominiumService {
     public CondominiumResponseDTO getById(UUID id) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        Condominium condominium = condominiumRepository.findByIdAndOwnerId(id, authenticatedUserId)
-                .orElseThrow(() -> new RuntimeException("Condominium not found or you don't have access"));
+        log.info("=== DEBUG getById ===");
+        log.info("Condominium ID: {}", id);
+        log.info("Authenticated User ID: {}", authenticatedUserId);
 
+        // Buscar condomínio
+        Condominium condominium = condominiumRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Condominium not found"));
+
+        // Verificar se é owner
+        boolean isOwner = condominium.getOwner().getId().equals(authenticatedUserId);
+        log.info("Is Owner: {}", isOwner);
+        log.info("Owner ID: {}", condominium.getOwner().getId());
+        
+        // Verificar se é membro
+        boolean isMember = membershipService.isMemberOf(authenticatedUserId, id);
+        log.info("Is Member: {}", isMember);
+
+        // Permitir acesso apenas se for owner ou membro
+        if (!isOwner && !isMember) {
+            log.warn("X Access Denied: User {} trying to access condominium {}", authenticatedUserId, id);
+            throw new RuntimeException("You don't have access to this condominium");
+        }
+
+        log.info("✓ Access Granted to condominium {}", id);
         return condominiumDtoMapper.toResponse(condominium);
     }
 }
