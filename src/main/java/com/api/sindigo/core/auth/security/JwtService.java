@@ -37,9 +37,9 @@ public class JwtService {
      */
     @Getter
     public static class JwtValidationResponse {
-        public boolean valid;
-        public String reason;
-        public Date expiresAt;
+        private final boolean valid;
+        private final String reason;
+        private final Date expiresAt;
 
         public JwtValidationResponse(boolean valid, String reason, Date expiresAt) {
             this.valid = valid;
