@@ -25,6 +25,8 @@ import java.util.UUID;
 @Slf4j
 public class AuditAspect {
 
+    private static final String UNKNOWN = "UNKNOWN";
+
     private final AuditLogRepository auditLogRepository;
     private final ObjectMapper objectMapper;
 
@@ -60,10 +62,10 @@ public class AuditAspect {
                 userRole = auth.getAuthorities().stream()
                         .map(a -> {
                             String authority = a.getAuthority();
-                            return authority != null ? authority.replace("ROLE_", "") : "UNKNOWN";
+                            return authority != null ? authority.replace("ROLE_", "") : UNKNOWN;
                         })
                         .findFirst()
-                        .orElse("UNKNOWN");
+                        .orElse(UNKNOWN);
             }
 
             String action = getAction(method);
@@ -159,7 +161,7 @@ public class AuditAspect {
             case "POST" -> "CREATE";
             case "PUT", "PATCH" -> "UPDATE";
             case "DELETE" -> "DELETE";
-            default -> "UNKNOWN";
+            default -> UNKNOWN;
         };
     }
 
