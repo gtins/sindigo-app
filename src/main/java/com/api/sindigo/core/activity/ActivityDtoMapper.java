@@ -16,10 +16,12 @@ public class ActivityDtoMapper {
         dto.setDescription(activity.getDescription());
         dto.setType(activity.getType());
         dto.setOrigin(activity.getOrigin());
+        dto.setStatus(activity.getStatus());
         dto.setStartDate(activity.getStartDate());
         dto.setEndDate(activity.getEndDate());
         dto.setCreatedAt(activity.getCreatedAt());
         dto.setUpdatedAt(activity.getUpdatedAt());
+        dto.setClosedAt(activity.getClosedAt());
         dto.setCreatedById(activity.getCreatedBy().getId());
         if (activity.getTicket() != null) {
             dto.setTicketId(activity.getTicket().getId());

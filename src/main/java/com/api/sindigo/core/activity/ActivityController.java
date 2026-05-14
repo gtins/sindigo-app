@@ -1,5 +1,6 @@
 package com.api.sindigo.core.activity;
 
+import com.api.sindigo.core.activity.dto.ActivityCloseDTO;
 import com.api.sindigo.core.activity.dto.ActivityCreateDTO;
 import com.api.sindigo.core.activity.dto.ActivityResponseDTO;
 import jakarta.validation.Valid;
@@ -32,5 +33,15 @@ public class ActivityController {
             @PathVariable UUID id
     ) {
         return activityService.listByCondominium(id);
+    }
+
+    @PostMapping("/condominiums/{condominiumId}/activities/{activityId}/close")
+    public ResponseEntity<ActivityResponseDTO> closeActivity(
+            @PathVariable UUID condominiumId,
+            @PathVariable UUID activityId,
+            @Valid @RequestBody ActivityCloseDTO dto
+    ) {
+        ActivityResponseDTO response = activityService.closeActivity(condominiumId, activityId, dto);
+        return ResponseEntity.ok(response);
     }
 }

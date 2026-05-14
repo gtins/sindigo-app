@@ -1,5 +1,6 @@
 package com.api.sindigo.core.ticket;
 
+import com.api.sindigo.core.ticket.dto.TicketCloseDTO;
 import com.api.sindigo.core.ticket.dto.TicketCreateDTO;
 import com.api.sindigo.core.ticket.dto.TicketResponseDTO;
 import com.api.sindigo.core.ticket.dto.TicketUpdateDTO;
@@ -56,6 +57,15 @@ public class TicketController {
             @PathVariable UUID ticketId) {
         ticketService.deleteTicket(condominiumId, ticketId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{ticketId}/close")
+    public ResponseEntity<TicketResponseDTO> closeTicket(
+            @PathVariable UUID condominiumId,
+            @PathVariable UUID ticketId,
+            @Valid @RequestBody TicketCloseDTO dto) {
+        TicketResponseDTO response = ticketService.closeTicket(condominiumId, ticketId, dto);
+        return ResponseEntity.ok(response);
     }
 }
 
