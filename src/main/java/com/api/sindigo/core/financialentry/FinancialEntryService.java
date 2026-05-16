@@ -54,8 +54,6 @@ public class FinancialEntryService {
 
     @Transactional(readOnly = true)
     public BalanceResponseDTO getBalance(UUID condominiumId) {
-        Condominium condominium = condominiumRepository.findById(condominiumId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found with id: " + condominiumId));
 
         BigDecimal totalIncome = financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.INCOME);
 

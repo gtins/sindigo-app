@@ -171,7 +171,7 @@ public class AuditAspect {
         if (uri.contains("change-role")) return "UserRole";
         if (uri.contains("/user/")) return "User";
         if (uri.contains("/auth/")) return "Auth";
-        return UNKNOWN;
+        return "Unknown";
     }
 
     private UUID extractResourceId(String uri) {

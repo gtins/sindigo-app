@@ -1,9 +1,11 @@
 package com.api.sindigo.core.activity;
 
+import com.api.sindigo.core.activity.dto.ActivityCloseDTO;
 import com.api.sindigo.core.activity.dto.ActivityCreateDTO;
 import com.api.sindigo.core.activity.dto.ActivityResponseDTO;
 import com.api.sindigo.core.activity.entities.Activity;
 import com.api.sindigo.core.activity.entities.ActivityOrigin;
+import com.api.sindigo.core.activity.entities.ActivityStatus;
 import com.api.sindigo.core.activity.validator.ActivityValidator;
 import com.api.sindigo.core.condominium.CondominiumRepository;
 import com.api.sindigo.core.condominium.entities.Condominium;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,6 +54,7 @@ public class ActivityService {
         activity.setDescription(dto.getDescription());
         activity.setType(dto.getType());
         activity.setOrigin(dto.getOrigin() != null ? dto.getOrigin() : ActivityOrigin.MANUAL);
+        activity.setStatus(ActivityStatus.PENDING);  // Inicializar com status PENDING
         activity.setStartDate(dto.getStartDate());
         activity.setEndDate(dto.getEndDate());
         activity.setCondominium(condominium);
@@ -88,5 +92,31 @@ public class ActivityService {
                 .stream()
                 .map(ActivityDtoMapper::toResponseDTO)
                 .toList();
+    }
+
+    @Transactional
+    public ActivityResponseDTO closeActivity(UUID condominiumId, UUID activityId, ActivityCloseDTO dto) {
+        UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
+
+        // Verifica se o condomínio pertence ao usuário autenticado
+        condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+
+        Activity activity = activityRepository.findByIdAndCondominiumId(activityId, condominiumId)
+                .orElseThrow(() -> new IllegalArgumentException("Activity not found"));
+
+        activity.setStatus(dto.getStatus());
+        activity.setClosedAt(LocalDateTime.now());
+
+        // Se houver notas de encerramento, adicionar ao histórico
+        if (dto.getClosingNotes() != null && !dto.getClosingNotes().isBlank()) {
+            String existingDescription = activity.getDescription() != null ? activity.getDescription() : "";
+            String timestamp = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+            activity.setDescription(existingDescription + (existingDescription.isEmpty() ? "" : "\n\n") + 
+                                   "[Encerrada em " + timestamp + "] " + dto.getClosingNotes());
+        }
+
+        Activity closedActivity = activityRepository.save(activity);
+        return ActivityDtoMapper.toResponseDTO(closedActivity);
     }
 }

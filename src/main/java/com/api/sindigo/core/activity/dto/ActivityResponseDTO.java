@@ -1,12 +1,14 @@
 package com.api.sindigo.core.activity.dto;
 
 import com.api.sindigo.core.activity.entities.ActivityOrigin;
+import com.api.sindigo.core.activity.entities.ActivityStatus;
 import com.api.sindigo.core.activity.entities.ActivityType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -22,6 +24,7 @@ public class ActivityResponseDTO {
     private String description;
     private ActivityType type;
     private ActivityOrigin origin;
+    private ActivityStatus status;
 
     private LocalDate startDate;
 
@@ -29,6 +32,7 @@ public class ActivityResponseDTO {
 
     private LocalDate createdAt;
     private LocalDate updatedAt;
+    private LocalDateTime closedAt;
 
     private UUID createdById;
     private UUID ticketId;

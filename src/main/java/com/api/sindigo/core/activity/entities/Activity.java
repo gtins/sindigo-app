@@ -10,6 +10,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +37,9 @@ public class Activity {
     @Enumerated(EnumType.STRING)
     private ActivityOrigin origin;
 
+    @Enumerated(EnumType.STRING)
+    private ActivityStatus status;
+
     private LocalDate startDate;
     private LocalDate endDate;
 
@@ -44,6 +48,8 @@ public class Activity {
 
     @UpdateTimestamp
     private LocalDate updatedAt;
+
+    private LocalDateTime closedAt;       // Quando foi finalizada
 
     @ManyToOne
     @JoinColumn(name = "condominium_id", nullable = false)

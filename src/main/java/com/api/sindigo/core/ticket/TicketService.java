@@ -4,6 +4,7 @@ import com.api.sindigo.core.activity.entities.Activity;
 import com.api.sindigo.core.auth.security.SecurityContextHelper;
 import com.api.sindigo.core.condominium.CondominiumRepository;
 import com.api.sindigo.core.condominium.entities.Condominium;
+import com.api.sindigo.core.ticket.dto.TicketCloseDTO;
 import com.api.sindigo.core.ticket.dto.TicketCreateDTO;
 import com.api.sindigo.core.ticket.dto.TicketResponseDTO;
 import com.api.sindigo.core.ticket.dto.TicketUpdateDTO;
@@ -124,6 +125,38 @@ public class TicketService {
                 .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
 
         ticketRepository.delete(ticket);
+    }
+
+    @Transactional
+    public TicketResponseDTO closeTicket(UUID condominiumId, UUID ticketId, TicketCloseDTO dto) {
+        UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
+
+        condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+
+        Ticket ticket = ticketRepository.findByIdAndCondominiumId(ticketId, condominiumId)
+                .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+
+        // Validar se o status é um status de encerramento válido
+        if (dto.getStatus() != TicketStatus.RESOLVIDO && 
+            dto.getStatus() != TicketStatus.FECHADO && 
+            dto.getStatus() != TicketStatus.CANCELADO) {
+            throw new IllegalArgumentException("Invalid closing status. Must be RESOLVIDO, FECHADO, or CANCELADO");
+        }
+
+        ticket.setStatus(dto.getStatus());
+        ticket.setClosedAt(LocalDateTime.now());
+        
+        // Se houver notas de encerramento, anexar às notas existentes
+        if (dto.getClosingNotes() != null && !dto.getClosingNotes().isBlank()) {
+            String existingNotes = ticket.getNotes() != null ? ticket.getNotes() : "";
+            String timestamp = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+            ticket.setNotes(existingNotes + (existingNotes.isEmpty() ? "" : "\n\n") + 
+                           "[" + timestamp + "] " + dto.getClosingNotes());
+        }
+
+        Ticket closedTicket = ticketRepository.save(ticket);
+        return mapToDTO(closedTicket);
     }
 
     private TicketResponseDTO mapToDTO(Ticket ticket) {

@@ -14,4 +14,6 @@ public interface ActivityRepository extends JpaRepository<Activity, UUID> {
     List<Activity> findByCondominiumIdAndCreatedById(UUID condominiumId, UUID createdById);
 
     Optional<Activity> findByIdAndCreatedById(UUID id, UUID createdById);
+
+    Optional<Activity> findByIdAndCondominiumId(UUID id, UUID condominiumId);
 }
