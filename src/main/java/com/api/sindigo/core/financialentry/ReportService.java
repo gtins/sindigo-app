@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.QuoteMode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,14 +70,18 @@ public class ReportService {
     }
 
     /**
-     * Gera o CSV formatado com cabeçalhos e dados
+     * Gera o CSV formatado com cabeçalhos e dados - OTIMIZADO PARA EXCEL
+     * UTF-8 BOM + Caracteres portugueses + Capitalização correta
      */
     private String generateFinancialCSV(List<FinancialEntry> entries) throws IOException {
         StringWriter sw = new StringWriter();
         
+        // CSVFormat.DEFAULT usa ',' mas Excel pt-BR prefere ';'
         CSVFormat csvFormat = CSVFormat.DEFAULT
-                .withHeader("ID", "Data", "Tipo", "Valor", "Descrição")
-                .withRecordSeparator('\n');
+                .withDelimiter(';')
+                .withHeader("Id", "Data", "Tipo", "Valor (R$)", "Descricao")
+                .withRecordSeparator('\n')
+                .withQuoteMode(QuoteMode.NON_NUMERIC);
 
         try (CSVPrinter printer = new CSVPrinter(sw, csvFormat)) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -85,12 +90,16 @@ public class ReportService {
 
             // Adicionar cada entrada ao CSV
             for (FinancialEntry entry : entries) {
+                String tipo = entry.getType().equals(FinancialEntryType.INCOME) ? "Entrada" : "Saida";
+                String valor = entry.getAmount().setScale(2, java.math.RoundingMode.HALF_UP).toString();
+                String descricao = capitalize(entry.getDescription());
+                
                 printer.printRecord(
                         entry.getId().toString(),
                         entry.getDate().format(formatter),
-                        entry.getType().equals(FinancialEntryType.INCOME) ? "ENTRADA" : "SAÍDA",
-                        "R$ " + entry.getAmount().setScale(2, java.math.RoundingMode.HALF_UP),
-                        entry.getDescription()
+                        tipo,
+                        valor,  // Sem "R$" para Excel reconhecer como número
+                        descricao
                 );
 
                 // Calcular totais
@@ -101,18 +110,32 @@ public class ReportService {
                 }
             }
 
-            // Adicionar linha em branco para separação
-            printer.println();
-
-            // Adicionar resumo
-            printer.printRecord("", "", "RESUMO", "", "");
-            printer.printRecord("", "Total Entradas:", "", "R$ " + totalIncome.setScale(2, java.math.RoundingMode.HALF_UP), "");
-            printer.printRecord("", "Total Saídas:", "", "R$ " + totalExpense.setScale(2, java.math.RoundingMode.HALF_UP), "");
-            printer.printRecord("", "Saldo:", "", "R$ " + totalIncome.subtract(totalExpense).setScale(2, java.math.RoundingMode.HALF_UP), "");
+            // Adicionar resumo (separado visualmente)
+            BigDecimal saldo = totalIncome.subtract(totalExpense);
+            String totalIncomeStr = totalIncome.setScale(2, java.math.RoundingMode.HALF_UP).toString();
+            String totalExpenseStr = totalExpense.setScale(2, java.math.RoundingMode.HALF_UP).toString();
+            String saldoStr = saldo.setScale(2, java.math.RoundingMode.HALF_UP).toString();
+            
+            printer.printRecord("", "", "", "", "");  // Linha vazia para separação
+            printer.printRecord("Resumo", "", "", "", "");
+            printer.printRecord("Total entradas", "", "", totalIncomeStr, "");
+            printer.printRecord("Total saidas", "", "", totalExpenseStr, "");
+            printer.printRecord("Saldo", "", "", saldoStr, "");
         }
 
         log.info("Relatório CSV gerado com sucesso. Total de registros: {}", entries.size());
         return sw.toString();
+    }
+
+    /**
+     * Formata string: primeira letra maiúscula, resto minúscula
+     * Exemplo: "MANUTENCAO ASADA" → "Manutencao asada"
+     */
+    private String capitalize(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        return text.substring(0, 1).toUpperCase() + text.substring(1).toLowerCase();
     }
 }
 
