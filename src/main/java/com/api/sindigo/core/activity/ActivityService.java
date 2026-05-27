@@ -84,11 +84,13 @@ public class ActivityService {
     public List<ActivityResponseDTO> listByCondominium(UUID condominiumId) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        // Verifica se o condomínio pertence ao usuário autenticado
-        condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+        // Verifica se o condomínio pertence ao usuário autenticado (owner ou member)
+        // Moradores podem CONSULTAR (ler) atividades, mas não criar
+        condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
 
-        return activityRepository.findByCondominiumIdAndCreatedById(condominiumId, authenticatedUserId)
+        // Retorna TODAS as atividades do condomínio (moradores consultam tudo)
+        return activityRepository.findByCondominiumId(condominiumId)
                 .stream()
                 .map(ActivityDtoMapper::toResponseDTO)
                 .toList();

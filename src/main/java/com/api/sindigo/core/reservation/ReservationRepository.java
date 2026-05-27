@@ -26,6 +26,24 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     );
 
     @Query("SELECT r FROM Reservation r WHERE r.condominium.id = :condominiumId " +
+           "AND r.status = :status AND r.requestedBy.id = :requestedById " +
+           "ORDER BY r.startTime DESC")
+    Page<Reservation> findByCondominiumIdAndStatusAndRequestedByIdOrderByStartTimeDesc(
+            @Param("condominiumId") UUID condominiumId,
+            @Param("status") ReservationStatus status,
+            @Param("requestedById") UUID requestedById,
+            Pageable pageable
+    );
+
+    @Query("SELECT r FROM Reservation r WHERE r.condominium.id = :condominiumId " +
+           "AND r.requestedBy.id = :requestedById ORDER BY r.startTime DESC")
+    Page<Reservation> findByCondominiumIdAndRequestedByIdOrderByStartTimeDesc(
+            @Param("condominiumId") UUID condominiumId,
+            @Param("requestedById") UUID requestedById,
+            Pageable pageable
+    );
+
+    @Query("SELECT r FROM Reservation r WHERE r.condominium.id = :condominiumId " +
            "AND r.area = :area " +
            "AND r.status != 'CANCELLED' " +
            "AND r.startTime < :endTime " +

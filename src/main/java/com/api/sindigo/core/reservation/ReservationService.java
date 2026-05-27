@@ -37,8 +37,8 @@ public class ReservationService {
 
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        // Verifica se o condomínio pertence ao usuário autenticado
-        Condominium condominium = condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+        // Verifica se o condomínio pertence ao usuário autenticado (owner ou member)
+        Condominium condominium = condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
 
         User requester = userRepository.findById(authenticatedUserId)
@@ -70,14 +70,28 @@ public class ReservationService {
     public Page<ReservationResponseDTO> listByCondominiumAndStatus(UUID condominiumId, ReservationStatus status, Pageable pageable) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+        Condominium condominium = condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
 
-        Page<Reservation> page = reservationRepository.findByCondominiumIdAndStatusOrderByStartTimeDesc(
-                condominiumId,
-                status,
-                pageable
-        );
+        // Se o usuário é owner (síndico), retorna TODAS as reservas
+        // Se não for owner, retorna apenas as SUAS reservas
+        boolean isOwner = condominium.getOwner().getId().equals(authenticatedUserId);
+
+        Page<Reservation> page;
+        if (isOwner) {
+            page = reservationRepository.findByCondominiumIdAndStatusOrderByStartTimeDesc(
+                    condominiumId,
+                    status,
+                    pageable
+            );
+        } else {
+            page = reservationRepository.findByCondominiumIdAndStatusAndRequestedByIdOrderByStartTimeDesc(
+                    condominiumId,
+                    status,
+                    authenticatedUserId,
+                    pageable
+            );
+        }
         return page.map(reservationDtoMapper::toResponseDTO);
     }
 
@@ -85,14 +99,27 @@ public class ReservationService {
     public Page<ReservationResponseDTO> listByCondominium(UUID condominiumId, Pageable pageable) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        // Verifica se o condomínio pertence ao usuário autenticado
-        condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+        // Verifica se o condomínio pertence ao usuário autenticado (owner ou member)
+        Condominium condominium = condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
 
-        Page<Reservation> page = reservationRepository.findByCondominiumIdOrderByStartTimeDesc(
-                condominiumId,
-                pageable
-        );
+        // Se o usuário é owner (síndico), retorna TODAS as reservas
+        // Se não for owner, retorna apenas as SUAS reservas
+        boolean isOwner = condominium.getOwner().getId().equals(authenticatedUserId);
+
+        Page<Reservation> page;
+        if (isOwner) {
+            page = reservationRepository.findByCondominiumIdOrderByStartTimeDesc(
+                    condominiumId,
+                    pageable
+            );
+        } else {
+            page = reservationRepository.findByCondominiumIdAndRequestedByIdOrderByStartTimeDesc(
+                    condominiumId,
+                    authenticatedUserId,
+                    pageable
+            );
+        }
         return page.map(reservationDtoMapper::toResponseDTO);
     }
 
