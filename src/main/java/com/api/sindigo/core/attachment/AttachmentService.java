@@ -39,7 +39,11 @@ public class AttachmentService {
             "image/png", "image/jpeg", "image/jpg", "image/gif",
             "application/pdf"
     );
-    private static final String ERROR_PREFIX = "Error";
+    private static final String ERROR_UPLOADING_S3 = "Error uploading file to S3";
+    private static final String ERROR_GENERATING_URL = "Error generating presigned URL";
+    private static final String ERROR_FILE_EMPTY = "File cannot be empty";
+    private static final String ERROR_FILE_SIZE = "File size exceeds maximum allowed size of 10MB";
+    private static final String ERROR_FILE_TYPE = "File type not allowed. Allowed types: PNG, JPG, JPEG, GIF, PDF";
 
     /**
      * Upload arquivo para S3 e salva metadados no banco
@@ -141,16 +145,16 @@ public class AttachmentService {
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new BusinessRuleException("File cannot be empty");
+            throw new BusinessRuleException(ERROR_FILE_EMPTY);
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new BusinessRuleException("File size exceeds maximum allowed size of 10MB");
+            throw new BusinessRuleException(ERROR_FILE_SIZE);
         }
 
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_MIME_TYPES.contains(contentType)) {
-            throw new BusinessRuleException("File type not allowed. Allowed types: PNG, JPG, JPEG, GIF, PDF");
+            throw new BusinessRuleException(ERROR_FILE_TYPE);
         }
     }
 
@@ -184,8 +188,8 @@ public class AttachmentService {
             s3Client.putObject(putRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
             log.debug("File uploaded to S3. Key: {}", storageKey);
         } catch (S3Exception e) {
-            log.error("Error uploading file to S3", e);
-            throw new BusinessRuleException(ERROR_PREFIX + " uploading file to S3: " + e.awsErrorDetails().errorMessage());
+            log.error(ERROR_UPLOADING_S3, e);
+            throw new BusinessRuleException(ERROR_UPLOADING_S3 + ": " + e.awsErrorDetails().errorMessage());
         }
     }
 
@@ -204,8 +208,8 @@ public class AttachmentService {
 
             return s3Presigner.presignGetObject(presignRequest).url().toString();
         } catch (Exception e) {
-            log.error("Error generating presigned URL", e);
-            throw new BusinessRuleException(ERROR_PREFIX + " generating presigned URL: " + e.getMessage());
+            log.error(ERROR_GENERATING_URL, e);
+            throw new BusinessRuleException(ERROR_GENERATING_URL + ": " + e.getMessage());
         }
     }
 
