@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,11 +34,12 @@ public class AttachmentService {
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
 
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final long MAX_FILE_SIZE = 10L * 1024 * 1024; // 10MB
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "image/png", "image/jpeg", "image/jpg", "image/gif",
             "application/pdf"
     );
+    private static final String ERROR_PREFIX = "Error";
 
     /**
      * Upload arquivo para S3 e salva metadados no banco
@@ -97,7 +97,7 @@ public class AttachmentService {
         return attachmentRepository.findByTicketIdAndDeletedAtNull(ticketId)
                 .stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -108,7 +108,7 @@ public class AttachmentService {
         return attachmentRepository.findByActivityIdAndDeletedAtNull(activityId)
                 .stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -119,7 +119,7 @@ public class AttachmentService {
         return attachmentRepository.findByServiceProviderIdAndDeletedAtNull(serviceProviderId)
                 .stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -185,7 +185,7 @@ public class AttachmentService {
             log.debug("File uploaded to S3. Key: {}", storageKey);
         } catch (S3Exception e) {
             log.error("Error uploading file to S3", e);
-            throw new BusinessRuleException("Error uploading file to S3: " + e.awsErrorDetails().errorMessage());
+            throw new BusinessRuleException(ERROR_PREFIX + " uploading file to S3: " + e.awsErrorDetails().errorMessage());
         }
     }
 
@@ -205,7 +205,7 @@ public class AttachmentService {
             return s3Presigner.presignGetObject(presignRequest).url().toString();
         } catch (Exception e) {
             log.error("Error generating presigned URL", e);
-            throw new BusinessRuleException("Error generating presigned URL: " + e.getMessage());
+            throw new BusinessRuleException(ERROR_PREFIX + " generating presigned URL: " + e.getMessage());
         }
     }
 
