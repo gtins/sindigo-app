@@ -38,7 +38,7 @@ public class TicketService {
 
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        Condominium condominium = condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+        Condominium condominium = condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
 
         User creator = userRepository.findById(authenticatedUserId)
@@ -64,7 +64,7 @@ public class TicketService {
     public List<TicketResponseDTO> getTicketsByCondominium(UUID condominiumId) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+        condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
 
         List<Ticket> tickets = ticketRepository.findByCondominiumIdOrderByCreatedAtDesc(condominiumId);
@@ -75,7 +75,7 @@ public class TicketService {
     public TicketResponseDTO getTicketById(UUID condominiumId, UUID ticketId) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+        condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
 
         Ticket ticket = ticketRepository.findByIdAndCondominiumId(ticketId, condominiumId)
@@ -90,7 +90,7 @@ public class TicketService {
 
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+        condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
 
         Ticket ticket = ticketRepository.findByIdAndCondominiumId(ticketId, condominiumId)
@@ -118,7 +118,7 @@ public class TicketService {
     public void deleteTicket(UUID condominiumId, UUID ticketId) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+        condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
 
         Ticket ticket = ticketRepository.findByIdAndCondominiumId(ticketId, condominiumId)
@@ -131,7 +131,7 @@ public class TicketService {
     public TicketResponseDTO closeTicket(UUID condominiumId, UUID ticketId, TicketCloseDTO dto) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
+        condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
 
         Ticket ticket = ticketRepository.findByIdAndCondominiumId(ticketId, condominiumId)

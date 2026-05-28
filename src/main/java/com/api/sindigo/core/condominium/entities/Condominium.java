@@ -31,6 +31,7 @@ public class Condominium {
 
     private String name;
     private String address;
+    private Integer unidades;
 
     @ManyToOne
     @JoinColumn(name = "owner_id", nullable = false)

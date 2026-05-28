@@ -12,6 +12,7 @@ public class CondominiumDtoMapper {
         return Condominium.builder()
                 .name(dto.getName())
                 .address(dto.getAddress())
+                .unidades(dto.getUnidades())
                 .build();
     }
 
@@ -20,6 +21,7 @@ public class CondominiumDtoMapper {
                 .id(condominium.getId())
                 .name(condominium.getName())
                 .address(condominium.getAddress())
+                .unidades(condominium.getUnidades())
                 .createdAt(condominium.getCreatedAt())
                 .build();
     }

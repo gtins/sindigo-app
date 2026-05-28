@@ -79,8 +79,14 @@ public class AttachmentController {
             @RequestParam(value = "category", defaultValue = "invoice") String category,
             Authentication authentication) {
         try {
+            if (activityId == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Activity ID is required"));
+            }
+            
             var activity = activityInstanceRepository.findById(activityId)
-                    .orElseThrow(() -> new IllegalArgumentException("Activity not found"));
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Activity not found with ID: " + activityId));
             
             // Extrair usuário do authentication - tenta UUID primeiro, depois email
             var currentUser = extractUserFromAuthentication(authentication);
