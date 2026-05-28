@@ -19,5 +19,7 @@ public class CondominiumCreateDTO {
 
     @NotBlank(message = "Address is required")
     private String address;
+
+    private Integer unidades;
 }
 
