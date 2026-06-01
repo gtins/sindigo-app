@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -20,6 +19,9 @@ public class ReservationCreateDTO {
 
     @NotBlank(message = "Area is required")
     private String area;
+
+    @NotBlank(message = "Unit number is required")
+    private String unitNumber;
 
     @NotNull(message = "Start time is required")
     private LocalDateTime startTime;

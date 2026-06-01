@@ -12,6 +12,12 @@ public class ReservationDtoMapper {
                 .id(reservation.getId())
                 .condominiumId(reservation.getCondominium().getId())
                 .area(reservation.getArea())
+                .requestedByName(
+                        reservation.getRequestedByName() != null
+                                ? reservation.getRequestedByName()
+                                : reservation.getRequestedBy() != null ? reservation.getRequestedBy().getName() : null
+                )
+                .requestedByUnit(reservation.getRequestedByUnit())
                 .startTime(reservation.getStartTime())
                 .endTime(reservation.getEndTime())
                 .status(reservation.getStatus())

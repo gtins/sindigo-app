@@ -11,6 +11,7 @@ public class ReservationValidator extends BaseValidator {
 
     public void validateReservationCreation(ReservationCreateDTO dto) {
         validateStringNotEmpty(dto.getArea(), "Área");
+        validateStringNotEmpty(dto.getUnitNumber(), "Unidade");
         validateTimeRange(dto.getStartTime(), dto.getEndTime());
     }
 

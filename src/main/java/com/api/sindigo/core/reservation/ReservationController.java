@@ -13,7 +13,10 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.format.annotation.DateTimeFormat;
 
+import java.time.LocalDate;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -60,5 +63,15 @@ public class ReservationController {
     ) {
         ReservationResponseDTO response = reservationService.approveReservation(condominiumId, reservationId, dto);
         return ResponseEntity.ok(response);
+    }
+
+    // AVAILABILITY - GET /condominiums/{id}/reservations/availability?area=Salão&date=2026-06-01
+    @GetMapping("/condominiums/{id}/reservations/availability")
+    public ResponseEntity<Map<String, Object>> checkAvailability(
+            @PathVariable UUID id,
+            @RequestParam String area,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        return ResponseEntity.ok(reservationService.checkAvailability(id, area, date));
     }
 }

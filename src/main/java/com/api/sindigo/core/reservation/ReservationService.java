@@ -17,7 +17,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -56,6 +59,8 @@ public class ReservationService {
         Reservation reservation = new Reservation();
         reservation.setCondominium(condominium);
         reservation.setArea(dto.getArea());
+        reservation.setRequestedByName(requester.getName());
+        reservation.setRequestedByUnit(dto.getUnitNumber());
         reservation.setStartTime(dto.getStartTime());
         reservation.setEndTime(dto.getEndTime());
         reservation.setStatus(ReservationStatus.PENDING);
@@ -121,6 +126,32 @@ public class ReservationService {
             );
         }
         return page.map(reservationDtoMapper::toResponseDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> checkAvailability(UUID condominiumId, String area, LocalDate date) {
+        UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
+
+        condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+
+        List<Reservation> conflicts = reservationRepository.findConflictingReservations(
+                condominiumId,
+                area,
+                startOfDay,
+                endOfDay
+        );
+
+        return Map.of(
+                "condominiumId", condominiumId,
+                "area", area,
+                "date", date,
+                "available", conflicts.isEmpty(),
+                "conflictsFound", conflicts.size()
+        );
     }
 
     @Transactional
