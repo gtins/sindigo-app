@@ -120,7 +120,6 @@ public class AttachmentController {
         }
     }
 
-    // ...existing code...
     @GetMapping("/{attachmentId}/presigned-url")
     public ResponseEntity<?> getPresignedUrl(@PathVariable UUID attachmentId) {
         try {
