@@ -77,6 +77,20 @@ class ProviderControllerTest {
     }
 
     @Test
+    void getProviderByIdReturnsResponseBodyNotNull() {
+        UUID condominiumId = UUID.randomUUID();
+        UUID providerId = UUID.randomUUID();
+        ProviderResponseDTO response = buildProviderResponse(condominiumId);
+        response.setId(providerId);
+        when(providerService.getProviderById(condominiumId, providerId)).thenReturn(response);
+
+        var result = controller.getProviderById(condominiumId, providerId);
+
+        assertEquals(200, result.getStatusCode().value());
+        assertNotNull(result.getBody());
+    }
+
+    @Test
     void updateProviderReturnsUpdatedResponse() {
         UUID condominiumId = UUID.randomUUID();
         UUID providerId = UUID.randomUUID();

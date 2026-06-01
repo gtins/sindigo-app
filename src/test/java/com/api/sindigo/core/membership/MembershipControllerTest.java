@@ -95,6 +95,19 @@ class MembershipControllerTest {
     }
 
     @Test
+    void removeMemberReturnsForbiddenForNonAdmin() {
+        UUID condominiumId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Authentication authentication = moradorAuth();
+
+        var result = controller.removeMember(authentication, condominiumId, userId);
+
+        assertEquals(403, result.getStatusCode().value());
+        Map<?, ?> body = assertInstanceOf(Map.class, result.getBody());
+        assertEquals("Apenas ADMIN pode remover moradores", body.get("error"));
+    }
+
+    @Test
     void getMyCondominiumsReturnsUserListWhenAuthenticated() {
         UUID userId = UUID.randomUUID();
         Authentication authentication = new UsernamePasswordAuthenticationToken(userId.toString(), "token", List.of(new SimpleGrantedAuthority("ROLE_MORADOR")));
@@ -124,6 +137,19 @@ class MembershipControllerTest {
         assertEquals(401, result.getStatusCode().value());
         Map<?, ?> body = assertInstanceOf(Map.class, result.getBody());
         assertEquals("Usuário não autenticado", body.get("error"));
+    }
+
+    @Test
+    void getMyCondominiumsReturnsEmptyListWhenUserHasNoMemberships() {
+        UUID userId = UUID.randomUUID();
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userId.toString(), "token", List.of(new SimpleGrantedAuthority("ROLE_MORADOR")));
+        when(membershipService.getCondominiumsByUser(userId)).thenReturn(List.of());
+
+        var result = controller.getMyCondominiums(authentication);
+
+        assertEquals(200, result.getStatusCode().value());
+        List<?> body = assertInstanceOf(List.class, result.getBody());
+        assertEquals(0, body.size());
     }
 
     private Authentication adminAuth() {

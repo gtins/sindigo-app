@@ -70,6 +70,22 @@ class UserControllerTest {
     }
 
     @Test
+    void createUserReturnsConflictForBusinessRuleException() {
+        RegisterRequestDTO dto = RegisterRequestDTO.builder()
+                .name("Maria Souza")
+                .email("maria@example.com")
+                .password("senha123")
+                .build();
+        when(userService.registerUser(dto)).thenThrow(new com.api.sindigo.exception.BusinessRuleException("Email já cadastrado no sistema"));
+
+        var result = controller.createUser(dto);
+
+        assertEquals(409, result.getStatusCode().value());
+        Map<?, ?> body = assertInstanceOf(Map.class, result.getBody());
+        assertEquals("Email já cadastrado no sistema", body.get("error"));
+    }
+
+    @Test
     void getCurrentUserReturnsCurrentUserData() {
         UUID userId = UUID.randomUUID();
         Authentication authentication = new UsernamePasswordAuthenticationToken(userId.toString(), "token");
@@ -145,6 +161,19 @@ class UserControllerTest {
         assertEquals(403, result.getStatusCode().value());
         Map<?, ?> body = assertInstanceOf(Map.class, result.getBody());
         assertEquals("Apenas ADMIN pode alterar roles", body.get("error"));
+    }
+
+    @Test
+    void changeUserRoleReturnsBadRequestForInvalidAuthenticatedPrincipalUuid() {
+        UUID adminId = UUID.randomUUID();
+        Authentication authentication = new UsernamePasswordAuthenticationToken("not-a-uuid", "token", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        ChangeRoleRequestDTO dto = ChangeRoleRequestDTO.builder().userId(adminId).role(UserRole.ADMIN).build();
+
+        var result = controller.changeUserRole(dto, authentication);
+
+        assertEquals(400, result.getStatusCode().value());
+        Map<?, ?> body = assertInstanceOf(Map.class, result.getBody());
+        assertEquals("ID de usuário inválido", body.get("error"));
     }
 
     @Test

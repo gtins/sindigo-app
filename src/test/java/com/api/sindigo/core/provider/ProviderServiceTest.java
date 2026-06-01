@@ -154,5 +154,62 @@ class ProviderServiceTest {
                 new ProviderCreateDTO("Carlos", "Elétrica", "11999999999", null, null)
         ));
     }
+
+    @Test
+    void getProviderByIdReturnsMappedProvider() {
+        UUID providerId = UUID.randomUUID();
+        Provider provider = Provider.builder()
+                .id(providerId)
+                .name("Carlos Manutenção")
+                .serviceType("Elétrica")
+                .phone("11999999999")
+                .email("carlos@example.com")
+                .notes("Atendimento noturno")
+                .condominium(condominium)
+                .activities(Collections.emptyList())
+                .build();
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+        when(condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)).thenReturn(Optional.of(condominium));
+        when(providerRepository.findByIdAndCondominiumId(providerId, condominiumId)).thenReturn(Optional.of(provider));
+
+        ProviderResponseDTO response = providerService.getProviderById(condominiumId, providerId);
+
+        assertEquals(providerId, response.getId());
+        assertEquals("Carlos Manutenção", response.getName());
+    }
+
+    @Test
+    void getProviderByIdRejectsMissingProvider() {
+        UUID providerId = UUID.randomUUID();
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+        when(condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)).thenReturn(Optional.of(condominium));
+        when(providerRepository.findByIdAndCondominiumId(providerId, condominiumId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> providerService.getProviderById(condominiumId, providerId));
+    }
+
+    @Test
+    void updateProviderRejectsMissingCondominium() {
+        UUID providerId = UUID.randomUUID();
+        ProviderUpdateDTO dto = new ProviderUpdateDTO("Carlos", "Elétrica", "11999999999", "carlos@example.com", null);
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+        when(condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> providerService.updateProvider(condominiumId, providerId, dto));
+    }
+
+    @Test
+    void deleteProviderRejectsMissingProvider() {
+        UUID providerId = UUID.randomUUID();
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+        when(condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)).thenReturn(Optional.of(condominium));
+        when(providerRepository.findByIdAndCondominiumId(providerId, condominiumId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> providerService.deleteProvider(condominiumId, providerId));
+    }
 }
 

@@ -83,6 +83,21 @@ class MembershipServiceTest {
     }
 
     @Test
+    void addMemberRejectsMissingCondominium() {
+        when(condominiumRepository.findById(condominiumId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> membershipService.addMember(condominiumId, userId));
+    }
+
+    @Test
+    void addMemberRejectsMissingUser() {
+        when(condominiumRepository.findById(condominiumId)).thenReturn(Optional.of(condominium));
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> membershipService.addMember(condominiumId, userId));
+    }
+
+    @Test
     void getMembersReturnsMappedList() {
         Membership membership = Membership.builder()
                 .id(UUID.randomUUID())
@@ -104,6 +119,24 @@ class MembershipServiceTest {
         membershipService.removeMember(condominiumId, userId);
 
         verify(membershipRepository).deleteByCondominiumIdAndUserId(condominiumId, userId);
+    }
+
+    @Test
+    void getCondominiumsByUserReturnsMappedList() {
+        Membership membership = Membership.builder()
+                .id(UUID.randomUUID())
+                .condominium(condominium)
+                .user(user)
+                .joinedAt(LocalDateTime.of(2026, 6, 1, 12, 0))
+                .build();
+
+        when(membershipRepository.findByUserId(userId)).thenReturn(List.of(membership));
+
+        List<MembershipResponseDTO> response = membershipService.getCondominiumsByUser(userId);
+
+        assertEquals(1, response.size());
+        assertEquals("Residencial Alfa", response.getFirst().getCondominiumName());
+        assertEquals(userId, response.getFirst().getUserId());
     }
 
     @Test

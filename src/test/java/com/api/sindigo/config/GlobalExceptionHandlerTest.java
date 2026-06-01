@@ -6,11 +6,15 @@ import com.api.sindigo.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class GlobalExceptionHandlerTest {
 
@@ -46,6 +50,28 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(413, response.getStatusCode().value());
         assertBodyMessage(response.getBody(), "File size exceeds maximum allowed size of 10MB");
+    }
+
+    @Test
+    void handlesS3ExceptionAsInternalServerError() {
+        S3Exception ex = mock(S3Exception.class);
+        AwsErrorDetails details = mock(AwsErrorDetails.class);
+        when(ex.awsErrorDetails()).thenReturn(details);
+        when(details.errorCode()).thenReturn("InternalError");
+        when(ex.getMessage()).thenReturn("boom");
+
+        var response = handler.handleS3Exception(ex);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertBodyMessage(response.getBody(), "Error communicating with storage service. Please try again later.");
+    }
+
+    @Test
+    void handlesGenericExceptionAsInternalServerError() {
+        var response = handler.handleGenericException(new RuntimeException("boom"));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertBodyMessage(response.getBody(), "An unexpected error occurred. Please try again later.");
     }
 
     @SuppressWarnings("unchecked")

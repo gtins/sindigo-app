@@ -47,7 +47,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.findByEmail(dto.getEmail())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(dto.getPassword())).thenReturn("hashed-password");
+        when(passwordEncoder.encode(any())).thenReturn("hashed-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
             user.setId(UUID.randomUUID());
@@ -126,7 +126,7 @@ class UserServiceTest {
         CreateAdminRequestDTO dto = new CreateAdminRequestDTO("Admin", "admin@example.com", "senha123", "super-secret-key");
 
         when(userRepository.findByEmail(dto.getEmail())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(dto.getPassword())).thenReturn("hashed-admin-password");
+        when(passwordEncoder.encode(any())).thenReturn("hashed-admin-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
             user.setId(UUID.randomUUID());
@@ -140,6 +140,37 @@ class UserServiceTest {
         assertEquals("admin@example.com", response.getEmail());
         assertEquals(UserRole.ADMIN, response.getRole());
         assertEquals("Admin criado com sucesso", response.getMessage());
+    }
+
+    @Test
+    void createAdminRejectsMissingSecretConfiguration() {
+        ReflectionTestUtils.setField(userService, "adminSecretKey", "");
+        CreateAdminRequestDTO dto = new CreateAdminRequestDTO("Admin", "admin@example.com", "senha123", "super-secret-key");
+
+        assertThrows(IllegalArgumentException.class, () -> userService.createAdmin(dto));
+    }
+
+    @Test
+    void createAdminRejectsWrongSecretKey() {
+        CreateAdminRequestDTO dto = new CreateAdminRequestDTO("Admin", "admin@example.com", "senha123", "wrong-key");
+
+        assertThrows(IllegalArgumentException.class, () -> userService.createAdmin(dto));
+    }
+
+    @Test
+    void createAdminRejectsDuplicatedEmail() {
+        CreateAdminRequestDTO dto = new CreateAdminRequestDTO("Admin", "admin@example.com", "senha123", "super-secret-key");
+
+        when(userRepository.findByEmail(dto.getEmail())).thenReturn(Optional.of(User.builder().build()));
+
+        assertThrows(IllegalArgumentException.class, () -> userService.createAdmin(dto));
+    }
+
+    @Test
+    void loginUserRejectsMissingUser() {
+        when(userRepository.findByEmail("maria@example.com")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> userService.loginUser(new LoginRequestDTO("maria@example.com", "senha123")));
     }
 
     @Test

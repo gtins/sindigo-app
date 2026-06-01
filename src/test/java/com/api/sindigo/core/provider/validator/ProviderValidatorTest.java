@@ -44,6 +44,60 @@ class ProviderValidatorTest {
     }
 
     @Test
+    void validateProviderCreationRejectsMissingName() {
+        ProviderCreateDTO dto = new ProviderCreateDTO(
+                " ",
+                "Elétrica",
+                "11999999999",
+                "carlos@example.com",
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> validator.validateProviderCreation(dto)
+        );
+
+        assertEquals("Nome do prestador é obrigatório", exception.getMessage());
+    }
+
+    @Test
+    void validateProviderCreationRejectsMissingServiceType() {
+        ProviderCreateDTO dto = new ProviderCreateDTO(
+                "Carlos Manutenção",
+                " ",
+                "11999999999",
+                "carlos@example.com",
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> validator.validateProviderCreation(dto)
+        );
+
+        assertEquals("Tipo de serviço é obrigatório", exception.getMessage());
+    }
+
+    @Test
+    void validateProviderUpdateRejectsInvalidEmail() {
+        ProviderUpdateDTO dto = new ProviderUpdateDTO(
+                "Carlos Manutenção",
+                "Elétrica",
+                "11999999999",
+                "email-inválido",
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> validator.validateProviderUpdate(dto)
+        );
+
+        assertEquals("Email inválido", exception.getMessage());
+    }
+
+    @Test
     void validateProviderUpdateRejectsMissingPhone() {
         ProviderUpdateDTO dto = new ProviderUpdateDTO(
                 "Carlos Manutenção",
