@@ -10,6 +10,7 @@ public class CondominiumValidator extends BaseValidator {
     public void validateCondominiumCreation(CondominiumCreateDTO dto) {
         validateStringNotEmpty(dto.getName(), "Nome");
         validateStringNotEmpty(dto.getAddress(), "Endereço");
+        validateCondition(dto.getUnidades() != null, "Unidades não pode ser nulo");
     }
 }
 

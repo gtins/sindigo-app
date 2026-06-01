@@ -109,6 +109,37 @@ class ActivityServiceTest {
     }
 
     @Test
+    void addActivityPermitsActivityStartingAndEndingOnSameDay() {
+        ActivityCreateDTO dto = new ActivityCreateDTO(
+                "Reunião de uma hora",
+                "Reunião rápida do condomínio",
+                ActivityType.ONCE,
+                null,
+                LocalDate.of(2026, 6, 1),
+                LocalDate.of(2026, 6, 1),
+                null,
+                null
+        );
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+        when(condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)).thenReturn(Optional.of(condominium));
+        when(userRepository.findById(authenticatedUserId)).thenReturn(Optional.of(creator));
+        when(activityRepository.save(any(Activity.class))).thenAnswer(invocation -> {
+            Activity activity = invocation.getArgument(0);
+            activity.setId(UUID.randomUUID());
+            return activity;
+        });
+
+        ActivityResponseDTO response = activityService.addActivity(condominiumId, dto);
+
+        assertEquals(ActivityStatus.PENDING, response.getStatus());
+        assertEquals(ActivityOrigin.MANUAL, response.getOrigin());
+        assertEquals(condominiumId, response.getCondominiumId());
+        assertEquals(authenticatedUserId, response.getCreatedById());
+        verify(activityRepository).save(any(Activity.class));
+    }
+
+    @Test
     void addActivityPersistsActivityLinkedToTicketAndProvider() {
         UUID ticketId = UUID.randomUUID();
         UUID providerId = UUID.randomUUID();
