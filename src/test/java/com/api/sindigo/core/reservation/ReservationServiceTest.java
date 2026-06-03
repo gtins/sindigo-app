@@ -75,8 +75,8 @@ class ReservationServiceTest {
         ReservationCreateDTO dto = ReservationCreateDTO.builder()
                 .area("Salão de festas")
                 .unitNumber("201")
-                .startTime(LocalDateTime.of(2026, 6, 1, 18, 0))
-                .endTime(LocalDateTime.of(2026, 6, 1, 22, 0))
+                .startTime(LocalDateTime.of(2026, 6, 9, 18, 0))
+                .endTime(LocalDateTime.of(2026, 6, 9, 22, 0))
                 .build();
 
         when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
@@ -105,8 +105,8 @@ class ReservationServiceTest {
         ReservationCreateDTO dto = ReservationCreateDTO.builder()
                 .area("Salão de festas")
                 .unitNumber("201")
-                .startTime(LocalDateTime.of(2026, 6, 1, 18, 0))
-                .endTime(LocalDateTime.of(2026, 6, 1, 22, 0))
+                .startTime(LocalDateTime.of(2026, 6, 9, 18, 0))
+                .endTime(LocalDateTime.of(2026, 6, 9, 22, 0))
                 .build();
 
         when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);

@@ -1,6 +1,7 @@
 package com.api.sindigo.core.condominium.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,6 +21,7 @@ public class CondominiumCreateDTO {
     @NotBlank(message = "Address is required")
     private String address;
 
+    @NotNull(message = "Unidades são obrigatórias")
     private Integer unidades;
 }
 

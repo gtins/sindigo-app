@@ -37,5 +37,20 @@ class CondominiumValidatorTest {
 
         assertEquals("Nome não pode ser vazio ou nulo", exception.getMessage());
     }
+
+    @Test
+    void validateCondominiumCreationRejectsMissingUnidades() {
+        CondominiumCreateDTO dto = CondominiumCreateDTO.builder()
+                .name("Residencial Alfa")
+                .address("Rua A, 123")
+                .build();
+
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> validator.validateCondominiumCreation(dto)
+        );
+
+        assertEquals("Unidades não pode ser nulo", exception.getMessage());
+    }
 }
 

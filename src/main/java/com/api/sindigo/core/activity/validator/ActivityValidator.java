@@ -15,8 +15,8 @@ public class ActivityValidator extends BaseValidator {
 
     public void validateDateRange(java.time.LocalDate startDate, java.time.LocalDate endDate) {
         validateCondition(
-            startDate.isBefore(endDate),
-            "Data de início deve ser antes da data de fim"
+            !startDate.isAfter(endDate),
+            "Data de início não pode ser após a data de fim"
         );
     }
 }

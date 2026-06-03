@@ -41,7 +41,15 @@ class ActivityValidatorTest {
                 )
         );
 
-        assertEquals("Data de início deve ser antes da data de fim", exception.getMessage());
+        assertEquals("Data de início não pode ser após a data de fim", exception.getMessage());
+    }
+
+    @Test
+    void validateDateRangeAcceptsSameDateForStartAndEnd() {
+        assertDoesNotThrow(() -> validator.validateDateRange(
+                LocalDate.of(2026, 6, 1),
+                LocalDate.of(2026, 6, 1)
+        ));
     }
 }
 

@@ -35,7 +35,11 @@ public class SecurityConfig {
             "http://localhost:3000",
             "http://localhost:5173",
             "http://localhost:4200",
-            "http://localhost:8080"
+            "http://localhost:8080",
+            "http://sindigo.site",
+            "https://sindigo.site",
+            "http://www.sindigo.site",
+            "https://www.sindigo.site"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(java.util.Collections.singletonList("*"));

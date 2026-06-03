@@ -19,8 +19,8 @@ class ReservationValidatorTest {
         ReservationCreateDTO dto = ReservationCreateDTO.builder()
                 .area("Salão de festas")
                 .unitNumber("201")
-                .startTime(LocalDateTime.of(2026, 6, 1, 18, 0))
-                .endTime(LocalDateTime.of(2026, 6, 1, 22, 0))
+                .startTime(LocalDateTime.of(2026, 6, 9, 18, 0))
+                .endTime(LocalDateTime.of(2026, 6, 9, 22, 0))
                 .build();
 
         assertDoesNotThrow(() -> validator.validateReservationCreation(dto));
@@ -31,12 +31,46 @@ class ReservationValidatorTest {
         ValidationException exception = assertThrows(
                 ValidationException.class,
                 () -> validator.validateTimeRange(
-                        LocalDateTime.of(2026, 6, 1, 22, 0),
-                        LocalDateTime.of(2026, 6, 1, 18, 0)
+                        LocalDateTime.of(2026, 6, 9, 22, 0),
+                        LocalDateTime.of(2026, 6, 9, 18, 0)
                 )
         );
 
         assertEquals("Hora de início deve ser antes da hora de fim", exception.getMessage());
+    }
+
+    @Test
+    void validateReservationCreationRejectsInsufficientAdvanceNotice() {
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> validator.validateReservationCreation(
+                        ReservationCreateDTO.builder()
+                                .area("Salão de festas")
+                                .unitNumber("201")
+                                .startTime(LocalDateTime.of(2026, 6, 3, 18, 0))
+                                .endTime(LocalDateTime.of(2026, 6, 3, 22, 0))
+                                .build()
+                )
+        );
+
+        assertEquals("As reservas devem ser feitas com no mínimo 7 dias de antecedência", exception.getMessage());
+    }
+
+    @Test
+    void validateReservationCreationRejectsExcessiveDuration() {
+        ValidationException exception = assertThrows(
+                ValidationException.class,
+                () -> validator.validateReservationCreation(
+                        ReservationCreateDTO.builder()
+                                .area("Salão de festas")
+                                .unitNumber("201")
+                                .startTime(LocalDateTime.of(2026, 6, 9, 10, 0))
+                                .endTime(LocalDateTime.of(2026, 6, 9, 18, 0))
+                                .build()
+                )
+        );
+
+        assertEquals("O período máximo permitido para uma reserva é de 6 horas", exception.getMessage());
     }
 
     @Test
