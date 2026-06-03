@@ -19,8 +19,8 @@ class ReservationValidatorTest {
         ReservationCreateDTO dto = ReservationCreateDTO.builder()
                 .area("Salão de festas")
                 .unitNumber("201")
-                .startTime(LocalDateTime.of(2026, 6, 9, 18, 0))
-                .endTime(LocalDateTime.of(2026, 6, 9, 22, 0))
+                .startTime(LocalDateTime.of(2026, 6, 11, 18, 0))
+                .endTime(LocalDateTime.of(2026, 6, 11, 22, 0))
                 .build();
 
         assertDoesNotThrow(() -> validator.validateReservationCreation(dto));
@@ -64,8 +64,8 @@ class ReservationValidatorTest {
                         ReservationCreateDTO.builder()
                                 .area("Salão de festas")
                                 .unitNumber("201")
-                                .startTime(LocalDateTime.of(2026, 6, 9, 10, 0))
-                                .endTime(LocalDateTime.of(2026, 6, 9, 18, 0))
+                                .startTime(LocalDateTime.of(2026, 6, 11, 10, 0))
+                                .endTime(LocalDateTime.of(2026, 6, 11, 18, 0))
                                 .build()
                 )
         );
