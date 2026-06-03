@@ -2,6 +2,7 @@ package com.api.sindigo.core.auth;
 
 import com.api.sindigo.core.auth.dto.LoginResponseDTO;
 import com.api.sindigo.core.auth.security.JwtService;
+import com.api.sindigo.core.ratelimit.RateLimited;
 import com.api.sindigo.core.user.UserService;
 import com.api.sindigo.core.user.dto.AuthResponseDTO;
 import com.api.sindigo.core.user.dto.CreateAdminRequestDTO;
@@ -30,6 +31,7 @@ public class AuthController {
     private final JwtService jwtService;
 
     @PostMapping("/register")
+    @RateLimited(maxRequests = 5, windowSeconds = 60, message = "Too many registration attempts. Please try again later.")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDTO dto) {
         try {
             AuthResponseDTO response = userService.registerUser(dto);
@@ -45,6 +47,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @RateLimited(maxRequests = 5, windowSeconds = 60, message = "Too many login attempts. Please try again later.")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO dto) {
         try {
             LoginResponseDTO response = userService.loginUser(dto);
@@ -60,6 +63,7 @@ public class AuthController {
     }
 
     @PostMapping("/create-admin")
+    @RateLimited(maxRequests = 3, windowSeconds = 300, message = "Too many admin creation attempts. Please try again in 5 minutes.")
     public ResponseEntity<?> createAdmin(@Valid @RequestBody CreateAdminRequestDTO dto) {
         try {
             AuthResponseDTO response = userService.createAdmin(dto);

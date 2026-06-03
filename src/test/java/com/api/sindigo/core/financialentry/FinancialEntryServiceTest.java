@@ -1,5 +1,6 @@
 package com.api.sindigo.core.financialentry;
 
+import com.api.sindigo.core.auth.security.SecurityContextHelper;
 import com.api.sindigo.core.condominium.CondominiumRepository;
 import com.api.sindigo.core.condominium.entities.Condominium;
 import com.api.sindigo.core.financialentry.dto.BalanceResponseDTO;
@@ -31,24 +32,37 @@ class FinancialEntryServiceTest {
     private final CondominiumRepository condominiumRepository = mock(CondominiumRepository.class);
     private final FinancialEntryDtoMapper financialEntryDtoMapper = new FinancialEntryDtoMapper();
     private final FinancialEntryValidator financialEntryValidator = new FinancialEntryValidator();
+    private final SecurityContextHelper securityContextHelper = mock(SecurityContextHelper.class);
     private final FinancialEntryService financialEntryService = new FinancialEntryService(
             financialEntryRepository,
             condominiumRepository,
             financialEntryDtoMapper,
-            financialEntryValidator
+            financialEntryValidator,
+            securityContextHelper
     );
 
     private UUID condominiumId;
+    private UUID userId;
     private Condominium condominium;
+    private User owner;
 
     @BeforeEach
     void setUp() {
         condominiumId = UUID.randomUUID();
+        userId = UUID.randomUUID();
+        owner = User.builder().id(userId).build();
         condominium = Condominium.builder()
                 .id(condominiumId)
-                .owner(User.builder().id(UUID.randomUUID()).build())
+                .owner(owner)
                 .name("Residencial Alfa")
                 .build();
+        
+        // Setup padrão
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(userId);
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, userId))
+                .thenReturn(Optional.of(condominium));
+        when(condominiumRepository.findByIdAndOwnerId(condominiumId, userId))
+                .thenReturn(Optional.of(condominium));
     }
 
     @Test
@@ -60,7 +74,6 @@ class FinancialEntryServiceTest {
                 .description("Taxa de condomínio")
                 .build();
 
-        when(condominiumRepository.findById(condominiumId)).thenReturn(Optional.of(condominium));
         when(financialEntryRepository.save(any(FinancialEntry.class))).thenAnswer(invocation -> {
             FinancialEntry entry = invocation.getArgument(0);
             entry.setId(UUID.randomUUID());
@@ -121,7 +134,8 @@ class FinancialEntryServiceTest {
                 .description("Conta de água")
                 .build();
 
-        when(condominiumRepository.findById(condominiumId)).thenReturn(Optional.empty());
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, userId))
+                .thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> financialEntryService.addFinancialEntry(condominiumId, dto));
     }

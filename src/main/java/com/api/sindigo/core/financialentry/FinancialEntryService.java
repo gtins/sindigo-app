@@ -1,5 +1,6 @@
 package com.api.sindigo.core.financialentry;
 
+import com.api.sindigo.core.auth.security.SecurityContextHelper;
 import com.api.sindigo.core.condominium.CondominiumRepository;
 import com.api.sindigo.core.condominium.entities.Condominium;
 import com.api.sindigo.core.financialentry.dto.BalanceResponseDTO;
@@ -24,13 +25,17 @@ public class FinancialEntryService {
     private final CondominiumRepository condominiumRepository;
     private final FinancialEntryDtoMapper financialEntryDtoMapper;
     private final FinancialEntryValidator financialEntryValidator;
+    private final SecurityContextHelper securityContextHelper;
 
     @Transactional
     public FinancialEntryResponseDTO addFinancialEntry(UUID condominiumId, FinancialEntryCreateDTO dto) {
         financialEntryValidator.validateFinancialEntryCreation(dto);
 
-        Condominium condominium = condominiumRepository.findById(condominiumId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found with id: " + condominiumId));
+        UUID userId = securityContextHelper.getAuthenticatedUserId();
+
+        // Validar acesso: usuário deve ser owner ou membro do condomínio
+        Condominium condominium = condominiumRepository.findByIdAndUserHasAccess(condominiumId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access to manage financial entries"));
 
         FinancialEntry financialEntry = new FinancialEntry();
         financialEntry.setType(dto.getType());
@@ -46,6 +51,12 @@ public class FinancialEntryService {
 
     @Transactional(readOnly = true)
     public List<FinancialEntryResponseDTO> listByCondominium(UUID condominiumId) {
+        UUID userId = securityContextHelper.getAuthenticatedUserId();
+
+        // Validar acesso
+        condominiumRepository.findByIdAndUserHasAccess(condominiumId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+
         return financialEntryRepository.findByCondominiumId(condominiumId)
                 .stream()
                 .map(financialEntryDtoMapper::toResponseDTO)
@@ -54,6 +65,11 @@ public class FinancialEntryService {
 
     @Transactional(readOnly = true)
     public BalanceResponseDTO getBalance(UUID condominiumId) {
+        UUID userId = securityContextHelper.getAuthenticatedUserId();
+
+        // Balance é sensível: apenas owner (síndico) pode acessar
+        condominiumRepository.findByIdAndOwnerId(condominiumId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have permission to view balance"));
 
         BigDecimal totalIncome = financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.INCOME);
 
