@@ -5,6 +5,8 @@ import com.api.sindigo.core.attachment.dto.AttachmentResponseDTO;
 import com.api.sindigo.core.attachment.dto.AttachmentUploadDTO;
 import com.api.sindigo.core.attachment.entities.Attachment;
 import com.api.sindigo.core.attachment.enums.AttachmentCategory;
+import com.api.sindigo.core.auth.security.SecurityContextHelper;
+import com.api.sindigo.core.condominium.CondominiumRepository;
 import com.api.sindigo.core.condominium.entities.Condominium;
 import com.api.sindigo.core.provider.entities.Provider;
 import com.api.sindigo.core.ticket.entities.Ticket;
@@ -59,7 +61,9 @@ class AttachmentServiceTest {
     private final S3Client s3Client = mock(S3Client.class);
     private final S3Presigner s3Presigner = mock(S3Presigner.class);
     private final AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
-    private final AttachmentService attachmentService = new AttachmentService(s3Client, s3Presigner, attachmentRepository);
+    private final CondominiumRepository condominiumRepository = mock(CondominiumRepository.class);
+    private final SecurityContextHelper securityContextHelper = mock(SecurityContextHelper.class);
+    private final AttachmentService attachmentService = new AttachmentService(s3Client, s3Presigner, attachmentRepository, condominiumRepository, securityContextHelper);
 
     @BeforeEach
     void setUp() {
@@ -125,19 +129,28 @@ class AttachmentServiceTest {
     @Test
     void generatePresignedUrlReturnsUrlForExistingAttachment() throws Exception {
         UUID attachmentId = UUID.randomUUID();
-        Attachment attachment = buildAttachment(buildUploadDTO().getUploadedBy(), buildUploadDTO().getCondominium(), buildUploadDTO().getTicket(), buildUploadDTO().getActivity(), buildUploadDTO().getServiceProvider(), AttachmentCategory.INVOICE.getCode());
+        UUID userId = UUID.randomUUID();
+        UUID condominiumId = UUID.randomUUID();
+        
+        Condominium condominium = Condominium.builder().id(condominiumId).build();
+        Attachment attachment = buildAttachment(buildUploadDTO().getUploadedBy(), condominium, buildUploadDTO().getTicket(), buildUploadDTO().getActivity(), buildUploadDTO().getServiceProvider(), AttachmentCategory.INVOICE.getCode());
         attachment.setId(attachmentId);
         attachment.setStorageKey("2026/06/file.pdf");
         attachment.setMimeType("application/pdf");
+        attachment.setCondominium(condominium);
 
         PresignedGetObjectRequest presigned = mock(PresignedGetObjectRequest.class);
         when(presigned.url()).thenReturn(java.net.URI.create("https://example.com/presigned").toURL());
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(userId);
         when(attachmentRepository.findById(attachmentId)).thenReturn(Optional.of(attachment));
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, userId)).thenReturn(Optional.of(condominium));
         when(s3Presigner.presignGetObject(any(GetObjectPresignRequest.class))).thenReturn(presigned);
 
         String url = attachmentService.generatePresignedUrl(attachmentId);
 
         assertEquals("https://example.com/presigned", url);
+        verify(securityContextHelper).getAuthenticatedUserId();
+        verify(condominiumRepository).findByIdAndUserHasAccess(condominiumId, userId);
     }
 
     @Test
@@ -155,40 +168,87 @@ class AttachmentServiceTest {
     }
 
     @Test
+    void generatePresignedUrlRejectsUserWithoutAccess() {
+        UUID attachmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID condominiumId = UUID.randomUUID();
+        
+        Condominium condominium = Condominium.builder().id(condominiumId).build();
+        Attachment attachment = buildAttachment(buildUploadDTO().getUploadedBy(), condominium, buildUploadDTO().getTicket(), buildUploadDTO().getActivity(), buildUploadDTO().getServiceProvider(), AttachmentCategory.INVOICE.getCode());
+        attachment.setId(attachmentId);
+        attachment.setCondominium(condominium);
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(userId);
+        when(attachmentRepository.findById(attachmentId)).thenReturn(Optional.of(attachment));
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, userId)).thenReturn(Optional.empty());
+
+        BusinessRuleException exception = assertThrows(BusinessRuleException.class, () -> attachmentService.generatePresignedUrl(attachmentId));
+
+        assertEquals("You don't have access to this attachment", exception.getMessage());
+    }
+
+    @Test
     void getTicketAttachmentsMapsResponses() {
         UUID ticketId = UUID.randomUUID();
-        Attachment attachment = buildAttachment(buildUploadDTO().getUploadedBy(), buildUploadDTO().getCondominium(), buildUploadDTO().getTicket(), buildUploadDTO().getActivity(), buildUploadDTO().getServiceProvider(), AttachmentCategory.TICKET_OPENING_EVIDENCE.getCode());
+        UUID userId = UUID.randomUUID();
+        UUID condominiumId = UUID.randomUUID();
+        
+        Condominium condominium = Condominium.builder().id(condominiumId).build();
+        Attachment attachment = buildAttachment(buildUploadDTO().getUploadedBy(), condominium, buildUploadDTO().getTicket(), buildUploadDTO().getActivity(), buildUploadDTO().getServiceProvider(), AttachmentCategory.TICKET_OPENING_EVIDENCE.getCode());
+        
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(userId);
         when(attachmentRepository.findByTicketIdAndDeletedAtNull(ticketId)).thenReturn(List.of(attachment));
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, userId)).thenReturn(Optional.of(condominium));
 
         List<AttachmentResponseDTO> result = attachmentService.getTicketAttachments(ticketId);
 
         assertEquals(1, result.size());
         assertEquals(attachment.getId(), result.getFirst().getId());
         assertEquals(attachment.getOriginalFileName(), result.getFirst().getOriginalFileName());
+        verify(securityContextHelper).getAuthenticatedUserId();
+        verify(condominiumRepository).findByIdAndUserHasAccess(condominiumId, userId);
     }
 
     @Test
     void getActivityAttachmentsMapsResponses() {
         UUID activityId = UUID.randomUUID();
-        Attachment attachment = buildAttachment(buildUploadDTO().getUploadedBy(), buildUploadDTO().getCondominium(), buildUploadDTO().getTicket(), buildUploadDTO().getActivity(), buildUploadDTO().getServiceProvider(), AttachmentCategory.INVOICE.getCode());
+        UUID userId = UUID.randomUUID();
+        UUID condominiumId = UUID.randomUUID();
+        
+        Condominium condominium = Condominium.builder().id(condominiumId).build();
+        Attachment attachment = buildAttachment(buildUploadDTO().getUploadedBy(), condominium, buildUploadDTO().getTicket(), buildUploadDTO().getActivity(), buildUploadDTO().getServiceProvider(), AttachmentCategory.INVOICE.getCode());
+        
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(userId);
         when(attachmentRepository.findByActivityIdAndDeletedAtNull(activityId)).thenReturn(List.of(attachment));
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, userId)).thenReturn(Optional.of(condominium));
 
         List<AttachmentResponseDTO> result = attachmentService.getActivityAttachments(activityId);
 
         assertEquals(1, result.size());
         assertEquals(attachment.getId(), result.getFirst().getId());
+        verify(securityContextHelper).getAuthenticatedUserId();
+        verify(condominiumRepository).findByIdAndUserHasAccess(condominiumId, userId);
     }
 
     @Test
     void getServiceProviderAttachmentsMapsResponses() {
         UUID providerId = UUID.randomUUID();
-        Attachment attachment = buildAttachment(buildUploadDTO().getUploadedBy(), buildUploadDTO().getCondominium(), buildUploadDTO().getTicket(), buildUploadDTO().getActivity(), buildUploadDTO().getServiceProvider(), AttachmentCategory.INVOICE.getCode());
+        UUID userId = UUID.randomUUID();
+        UUID condominiumId = UUID.randomUUID();
+        
+        Condominium condominium = Condominium.builder().id(condominiumId).build();
+        Attachment attachment = buildAttachment(buildUploadDTO().getUploadedBy(), condominium, buildUploadDTO().getTicket(), buildUploadDTO().getActivity(), buildUploadDTO().getServiceProvider(), AttachmentCategory.INVOICE.getCode());
+        
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(userId);
         when(attachmentRepository.findByServiceProviderIdAndDeletedAtNull(providerId)).thenReturn(List.of(attachment));
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, userId)).thenReturn(Optional.of(condominium));
 
         List<AttachmentResponseDTO> result = attachmentService.getServiceProviderAttachments(providerId);
 
         assertEquals(1, result.size());
         assertEquals(attachment.getId(), result.getFirst().getId());
+        verify(securityContextHelper).getAuthenticatedUserId();
+        verify(condominiumRepository).findByIdAndUserHasAccess(condominiumId, userId);
     }
 
     @Test

@@ -1,8 +1,10 @@
 package com.api.sindigo.core.attachment;
 
+import com.api.sindigo.core.auth.security.SecurityContextHelper;
 import com.api.sindigo.core.attachment.dto.AttachmentResponseDTO;
 import com.api.sindigo.core.attachment.dto.AttachmentUploadDTO;
 import com.api.sindigo.core.attachment.entities.Attachment;
+import com.api.sindigo.core.condominium.CondominiumRepository;
 import com.api.sindigo.exception.BusinessRuleException;
 import com.api.sindigo.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,8 @@ public class AttachmentService {
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
     private final AttachmentRepository attachmentRepository;
+    private final CondominiumRepository condominiumRepository;
+    private final SecurityContextHelper securityContextHelper;
 
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
@@ -80,9 +84,12 @@ public class AttachmentService {
 
     /**
      * Gera URL assinada para visualização/download
+     * SEGURANÇA: Valida se o usuário tem acesso ao condomínio
      */
     @Transactional(readOnly = true)
     public String generatePresignedUrl(UUID attachmentId) {
+        UUID userId = securityContextHelper.getAuthenticatedUserId();
+        
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attachment not found with ID: " + attachmentId));
 
@@ -90,38 +97,68 @@ public class AttachmentService {
             throw new BusinessRuleException("Cannot generate URL for deleted attachment");
         }
 
+        // Validar acesso ao condomínio do attachment
+        validateUserHasAccessToAttachment(userId, attachment);
+
         return generatePresignedUrlFromKey(attachment.getStorageKey(), attachment.getMimeType());
     }
 
     /**
      * Lista todos os attachments de um ticket
+     * SEGURANÇA: Valida acesso ao condomínio do ticket
      */
     @Transactional(readOnly = true)
     public List<AttachmentResponseDTO> getTicketAttachments(UUID ticketId) {
-        return attachmentRepository.findByTicketIdAndDeletedAtNull(ticketId)
-                .stream()
+        UUID userId = securityContextHelper.getAuthenticatedUserId();
+        
+        List<Attachment> attachments = attachmentRepository.findByTicketIdAndDeletedAtNull(ticketId);
+        
+        if (!attachments.isEmpty()) {
+            // Validar acesso ao condomínio usando o primeiro attachment
+            validateUserHasAccessToAttachment(userId, attachments.get(0));
+        }
+        
+        return attachments.stream()
                 .map(this::convertToDTO)
                 .toList();
     }
 
     /**
      * Lista todos os attachments de uma atividade
+     * SEGURANÇA: Valida acesso ao condomínio da atividade
      */
     @Transactional(readOnly = true)
     public List<AttachmentResponseDTO> getActivityAttachments(UUID activityId) {
-        return attachmentRepository.findByActivityIdAndDeletedAtNull(activityId)
-                .stream()
+        UUID userId = securityContextHelper.getAuthenticatedUserId();
+        
+        List<Attachment> attachments = attachmentRepository.findByActivityIdAndDeletedAtNull(activityId);
+        
+        if (!attachments.isEmpty()) {
+            // Validar acesso ao condomínio usando o primeiro attachment
+            validateUserHasAccessToAttachment(userId, attachments.get(0));
+        }
+        
+        return attachments.stream()
                 .map(this::convertToDTO)
                 .toList();
     }
 
     /**
      * Lista todos os attachments de um prestador
+     * SEGURANÇA: Valida acesso ao condomínio do prestador
      */
     @Transactional(readOnly = true)
     public List<AttachmentResponseDTO> getServiceProviderAttachments(UUID serviceProviderId) {
-        return attachmentRepository.findByServiceProviderIdAndDeletedAtNull(serviceProviderId)
-                .stream()
+        UUID userId = securityContextHelper.getAuthenticatedUserId();
+        
+        List<Attachment> attachments = attachmentRepository.findByServiceProviderIdAndDeletedAtNull(serviceProviderId);
+        
+        if (!attachments.isEmpty()) {
+            // Validar acesso ao condomínio usando o primeiro attachment
+            validateUserHasAccessToAttachment(userId, attachments.get(0));
+        }
+        
+        return attachments.stream()
                 .map(this::convertToDTO)
                 .toList();
     }
@@ -142,6 +179,19 @@ public class AttachmentService {
     }
 
     // ============ Private Helper Methods ============
+
+    /**
+     * Valida se o usuário autenticado tem acesso ao condomínio do attachment
+     * SEGURANÇA: Previne BOLA (Broken Object Level Authorization)
+     */
+    private void validateUserHasAccessToAttachment(UUID userId, Attachment attachment) {
+        if (attachment.getCondominium() == null) {
+            throw new BusinessRuleException("Attachment does not have an associated condominium");
+        }
+        
+        condominiumRepository.findByIdAndUserHasAccess(attachment.getCondominium().getId(), userId)
+                .orElseThrow(() -> new BusinessRuleException("You don't have access to this attachment"));
+    }
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
