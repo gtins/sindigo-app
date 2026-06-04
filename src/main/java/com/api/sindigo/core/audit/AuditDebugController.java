@@ -13,6 +13,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * ⚠️ DEBUG ENDPOINT DESABILITADO
+ * Este endpoint foi desabilitado por razões de segurança (informação disclosure).
+ * Remova este arquivo em produção.
+ */
+/*
 @RestController
 @RequestMapping("/admin/audit/debug")
 @RequiredArgsConstructor
@@ -21,20 +27,9 @@ public class AuditDebugController {
 
     @GetMapping
     public ResponseEntity<?> debug() {
-        Map<String, Object> response = new HashMap<>();
-        
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        
-        response.put("authenticated", auth != null && auth.isAuthenticated());
-        response.put("principal", auth != null ? auth.getPrincipal() : null);
-        response.put("authorities", auth != null ? 
-            auth.getAuthorities().stream()
-                .map(a -> a.getAuthority())
-                .collect(Collectors.toList()) 
-            : null);
-        response.put("details", auth != null ? auth.getDetails() : null);
-        
-        return ResponseEntity.ok(response);
+        // Endpoint desabilitado - expunha informações de segurança
+        return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
     }
 }
+*/
 
