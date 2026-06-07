@@ -72,11 +72,15 @@ class ReservationServiceTest {
 
     @Test
     void createReservationPersistsNewReservation() {
+        // Valid date: 8 days from now with 4-hour duration
+        LocalDateTime validStart = LocalDateTime.now().plusDays(8).withHour(18).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime validEnd = validStart.plusHours(4);
+        
         ReservationCreateDTO dto = ReservationCreateDTO.builder()
                 .area("Salão de festas")
                 .unitNumber("201")
-                .startTime(LocalDateTime.of(2026, 6, 11, 18, 0))
-                .endTime(LocalDateTime.of(2026, 6, 11, 22, 0))
+                .startTime(validStart)
+                .endTime(validEnd)
                 .build();
 
         when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
@@ -102,11 +106,15 @@ class ReservationServiceTest {
 
     @Test
     void createReservationRejectsConflictingReservation() {
+        // Valid date: 8 days from now with 4-hour duration
+        LocalDateTime validStart = LocalDateTime.now().plusDays(8).withHour(18).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime validEnd = validStart.plusHours(4);
+        
         ReservationCreateDTO dto = ReservationCreateDTO.builder()
                 .area("Salão de festas")
                 .unitNumber("201")
-                .startTime(LocalDateTime.of(2026, 6, 11, 18, 0))
-                .endTime(LocalDateTime.of(2026, 6, 11, 22, 0))
+                .startTime(validStart)
+                .endTime(validEnd)
                 .build();
 
         when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
@@ -164,7 +172,9 @@ class ReservationServiceTest {
 
     @Test
     void checkAvailabilityReturnsUnavailableWhenConflictsExist() {
-        LocalDate date = LocalDate.of(2026, 6, 1);
+        // Use a date 8 days from now
+        LocalDate date = LocalDate.now().plusDays(8);
+        
         when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
         when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)).thenReturn(Optional.of(condominium));
         when(reservationRepository.findConflictingReservations(eq(condominiumId), eq("Salão de festas"), any(), any()))

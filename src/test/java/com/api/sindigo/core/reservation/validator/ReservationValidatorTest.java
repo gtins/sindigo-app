@@ -16,11 +16,15 @@ class ReservationValidatorTest {
 
     @Test
     void validateReservationCreationAcceptsValidPayload() {
+        // Valid date: 8 days from now
+        LocalDateTime validStart = LocalDateTime.now().plusDays(8).withHour(18).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime validEnd = validStart.plusHours(4);
+        
         ReservationCreateDTO dto = ReservationCreateDTO.builder()
                 .area("Salão de festas")
                 .unitNumber("201")
-                .startTime(LocalDateTime.of(2026, 6, 11, 18, 0))
-                .endTime(LocalDateTime.of(2026, 6, 11, 22, 0))
+                .startTime(validStart)
+                .endTime(validEnd)
                 .build();
 
         assertDoesNotThrow(() -> validator.validateReservationCreation(dto));
@@ -28,11 +32,14 @@ class ReservationValidatorTest {
 
     @Test
     void validateReservationCreationRejectsInvalidTimeRange() {
+        // Use a date 8 days from now, but with invalid time range (end before start)
+        LocalDateTime baseDate = LocalDateTime.now().plusDays(8).withHour(18).withMinute(0).withSecond(0).withNano(0);
+        
         ValidationException exception = assertThrows(
                 ValidationException.class,
                 () -> validator.validateTimeRange(
-                        LocalDateTime.of(2026, 6, 9, 22, 0),
-                        LocalDateTime.of(2026, 6, 9, 18, 0)
+                        baseDate.plusHours(2),
+                        baseDate
                 )
         );
 
@@ -41,14 +48,18 @@ class ReservationValidatorTest {
 
     @Test
     void validateReservationCreationRejectsInsufficientAdvanceNotice() {
+        // Invalid date: only 3 days from now (less than 7 days required)
+        LocalDateTime invalidStart = LocalDateTime.now().plusDays(3).withHour(18).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime invalidEnd = invalidStart.plusHours(4);
+        
         ValidationException exception = assertThrows(
                 ValidationException.class,
                 () -> validator.validateReservationCreation(
                         ReservationCreateDTO.builder()
                                 .area("Salão de festas")
                                 .unitNumber("201")
-                                .startTime(LocalDateTime.of(2026, 6, 3, 18, 0))
-                                .endTime(LocalDateTime.of(2026, 6, 3, 22, 0))
+                                .startTime(invalidStart)
+                                .endTime(invalidEnd)
                                 .build()
                 )
         );
@@ -58,14 +69,18 @@ class ReservationValidatorTest {
 
     @Test
     void validateReservationCreationRejectsExcessiveDuration() {
+        // Valid date but excessive duration (8 hours, max is 6)
+        LocalDateTime validStart = LocalDateTime.now().plusDays(8).withHour(10).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime excessiveEnd = validStart.plusHours(8);
+        
         ValidationException exception = assertThrows(
                 ValidationException.class,
                 () -> validator.validateReservationCreation(
                         ReservationCreateDTO.builder()
                                 .area("Salão de festas")
                                 .unitNumber("201")
-                                .startTime(LocalDateTime.of(2026, 6, 11, 10, 0))
-                                .endTime(LocalDateTime.of(2026, 6, 11, 18, 0))
+                                .startTime(validStart)
+                                .endTime(excessiveEnd)
                                 .build()
                 )
         );
