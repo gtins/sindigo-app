@@ -13,6 +13,7 @@ import com.api.sindigo.core.user.UserRepository;
 import com.api.sindigo.core.user.entities.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,6 +57,10 @@ class ReservationServiceTest {
     private Condominium condominium;
     private User requester;
 
+    // Fixed test reference date (far future to ensure it's always valid)
+    private static final LocalDateTime TEST_REFERENCE_DATE = LocalDateTime.of(2099, 12, 25, 12, 0, 0);
+    private static final LocalDate TEST_REFERENCE_DAY = LocalDate.of(2099, 12, 25);
+
     @BeforeEach
     void setUp() {
         authenticatedUserId = UUID.randomUUID();
@@ -72,8 +78,8 @@ class ReservationServiceTest {
 
     @Test
     void createReservationPersistsNewReservation() {
-        // Valid date: 8 days from now with 4-hour duration
-        LocalDateTime validStart = LocalDateTime.now().plusDays(8).withHour(18).withMinute(0).withSecond(0).withNano(0);
+        // Fixed date: 2099-12-25 (far future, always valid for 7+ days from now)
+        LocalDateTime validStart = TEST_REFERENCE_DATE.withHour(18).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime validEnd = validStart.plusHours(4);
         
         ReservationCreateDTO dto = ReservationCreateDTO.builder()
@@ -83,31 +89,35 @@ class ReservationServiceTest {
                 .endTime(validEnd)
                 .build();
 
-        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
-        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)).thenReturn(Optional.of(condominium));
-        when(userRepository.findById(authenticatedUserId)).thenReturn(Optional.of(requester));
-        when(reservationRepository.findConflictingReservations(condominiumId, dto.getArea(), dto.getStartTime(), dto.getEndTime()))
-                .thenReturn(Collections.emptyList());
-        when(reservationRepository.save(any(Reservation.class))).thenAnswer(invocation -> {
-            Reservation reservation = invocation.getArgument(0);
-            reservation.setId(UUID.randomUUID());
-            return reservation;
-        });
+        try (MockedStatic<LocalDateTime> mockedDateTime = mockStatic(LocalDateTime.class)) {
+            mockedDateTime.when(LocalDateTime::now).thenReturn(TEST_REFERENCE_DATE.minusDays(8));
+            
+            when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+            when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)).thenReturn(Optional.of(condominium));
+            when(userRepository.findById(authenticatedUserId)).thenReturn(Optional.of(requester));
+            when(reservationRepository.findConflictingReservations(condominiumId, dto.getArea(), dto.getStartTime(), dto.getEndTime()))
+                    .thenReturn(Collections.emptyList());
+            when(reservationRepository.save(any(Reservation.class))).thenAnswer(invocation -> {
+                Reservation reservation = invocation.getArgument(0);
+                reservation.setId(UUID.randomUUID());
+                return reservation;
+            });
 
-        ReservationResponseDTO response = reservationService.createReservation(condominiumId, dto);
+            ReservationResponseDTO response = reservationService.createReservation(condominiumId, dto);
 
-        assertEquals(condominiumId, response.getCondominiumId());
-        assertEquals("Salão de festas", response.getArea());
-        assertEquals("Maria Souza", response.getRequestedByName());
-        assertEquals("201", response.getRequestedByUnit());
-        assertEquals(ReservationStatus.PENDING, response.getStatus());
-        verify(reservationRepository).save(any(Reservation.class));
+            assertEquals(condominiumId, response.getCondominiumId());
+            assertEquals("Salão de festas", response.getArea());
+            assertEquals("Maria Souza", response.getRequestedByName());
+            assertEquals("201", response.getRequestedByUnit());
+            assertEquals(ReservationStatus.PENDING, response.getStatus());
+            verify(reservationRepository).save(any(Reservation.class));
+        }
     }
 
     @Test
     void createReservationRejectsConflictingReservation() {
-        // Valid date: 8 days from now with 4-hour duration
-        LocalDateTime validStart = LocalDateTime.now().plusDays(8).withHour(18).withMinute(0).withSecond(0).withNano(0);
+        // Fixed date: 2099-12-25 (far future, always valid for 7+ days from now)
+        LocalDateTime validStart = TEST_REFERENCE_DATE.withHour(18).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime validEnd = validStart.plusHours(4);
         
         ReservationCreateDTO dto = ReservationCreateDTO.builder()
@@ -117,13 +127,17 @@ class ReservationServiceTest {
                 .endTime(validEnd)
                 .build();
 
-        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
-        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)).thenReturn(Optional.of(condominium));
-        when(userRepository.findById(authenticatedUserId)).thenReturn(Optional.of(requester));
-        when(reservationRepository.findConflictingReservations(eq(condominiumId), eq(dto.getArea()), any(), any()))
-                .thenReturn(List.of(Reservation.builder().id(UUID.randomUUID()).build()));
+        try (MockedStatic<LocalDateTime> mockedDateTime = mockStatic(LocalDateTime.class)) {
+            mockedDateTime.when(LocalDateTime::now).thenReturn(TEST_REFERENCE_DATE.minusDays(8));
+            
+            when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+            when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)).thenReturn(Optional.of(condominium));
+            when(userRepository.findById(authenticatedUserId)).thenReturn(Optional.of(requester));
+            when(reservationRepository.findConflictingReservations(eq(condominiumId), eq(dto.getArea()), any(), any()))
+                    .thenReturn(List.of(Reservation.builder().id(UUID.randomUUID()).build()));
 
-        assertThrows(com.api.sindigo.exception.ValidationException.class, () -> reservationService.createReservation(condominiumId, dto));
+            assertThrows(com.api.sindigo.exception.ValidationException.class, () -> reservationService.createReservation(condominiumId, dto));
+        }
     }
 
     @Test
@@ -172,15 +186,14 @@ class ReservationServiceTest {
 
     @Test
     void checkAvailabilityReturnsUnavailableWhenConflictsExist() {
-        // Use a date 8 days from now
-        LocalDate date = LocalDate.now().plusDays(8);
+        // Fixed date: 2099-12-25 (far future, always valid)
         
         when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
         when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)).thenReturn(Optional.of(condominium));
         when(reservationRepository.findConflictingReservations(eq(condominiumId), eq("Salão de festas"), any(), any()))
                 .thenReturn(List.of(Reservation.builder().id(UUID.randomUUID()).build()));
 
-        var result = reservationService.checkAvailability(condominiumId, "Salão de festas", date);
+        var result = reservationService.checkAvailability(condominiumId, "Salão de festas", TEST_REFERENCE_DAY);
 
         assertEquals(condominiumId, result.get("condominiumId"));
         assertEquals(false, result.get("available"));
@@ -230,6 +243,4 @@ class ReservationServiceTest {
         ));
     }
 }
-
-
 

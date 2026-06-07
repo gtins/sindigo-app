@@ -3,21 +3,26 @@ package com.api.sindigo.core.reservation.validator;
 import com.api.sindigo.core.reservation.dto.ReservationCreateDTO;
 import com.api.sindigo.exception.ValidationException;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mockStatic;
 
 class ReservationValidatorTest {
 
     private final ReservationValidator validator = new ReservationValidator();
 
+    // Fixed test reference date (far future to ensure it's always valid)
+    private static final LocalDateTime TEST_REFERENCE_DATE = LocalDateTime.of(2099, 12, 25, 12, 0, 0);
+
     @Test
     void validateReservationCreationAcceptsValidPayload() {
-        // Valid date: 8 days from now
-        LocalDateTime validStart = LocalDateTime.now().plusDays(8).withHour(18).withMinute(0).withSecond(0).withNano(0);
+        // Fixed date: 2099-12-25 (far future, always valid for 7+ days from now)
+        LocalDateTime validStart = TEST_REFERENCE_DATE.withHour(18).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime validEnd = validStart.plusHours(4);
         
         ReservationCreateDTO dto = ReservationCreateDTO.builder()
@@ -32,8 +37,8 @@ class ReservationValidatorTest {
 
     @Test
     void validateReservationCreationRejectsInvalidTimeRange() {
-        // Use a date 8 days from now, but with invalid time range (end before start)
-        LocalDateTime baseDate = LocalDateTime.now().plusDays(8).withHour(18).withMinute(0).withSecond(0).withNano(0);
+        // Time range test doesn't depend on system clock, using fixed date
+        LocalDateTime baseDate = TEST_REFERENCE_DATE.withHour(18).withMinute(0).withSecond(0).withNano(0);
         
         ValidationException exception = assertThrows(
                 ValidationException.class,
@@ -48,29 +53,35 @@ class ReservationValidatorTest {
 
     @Test
     void validateReservationCreationRejectsInsufficientAdvanceNotice() {
-        // Invalid date: only 3 days from now (less than 7 days required)
-        LocalDateTime invalidStart = LocalDateTime.now().plusDays(3).withHour(18).withMinute(0).withSecond(0).withNano(0);
+        // Mock LocalDateTime.now() to return a fixed reference time
+        LocalDateTime mockedNow = LocalDateTime.of(2026, 6, 10, 10, 0, 0);
+        LocalDateTime invalidStart = mockedNow.plusDays(3).withHour(18).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime invalidEnd = invalidStart.plusHours(4);
         
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> validator.validateReservationCreation(
-                        ReservationCreateDTO.builder()
-                                .area("Salão de festas")
-                                .unitNumber("201")
-                                .startTime(invalidStart)
-                                .endTime(invalidEnd)
-                                .build()
-                )
-        );
+        try (MockedStatic<LocalDateTime> mockedDateTime = mockStatic(LocalDateTime.class)) {
+            mockedDateTime.when(LocalDateTime::now).thenReturn(mockedNow);
+            
+            ValidationException exception = assertThrows(
+                    ValidationException.class,
+                    () -> validator.validateReservationCreation(
+                            ReservationCreateDTO.builder()
+                                    .area("Salão de festas")
+                                    .unitNumber("201")
+                                    .startTime(invalidStart)
+                                    .endTime(invalidEnd)
+                                    .build()
+                    )
+            );
 
-        assertEquals("As reservas devem ser feitas com no mínimo 7 dias de antecedência", exception.getMessage());
+            assertEquals("As reservas devem ser feitas com no mínimo 7 dias de antecedência", exception.getMessage());
+        }
     }
 
     @Test
     void validateReservationCreationRejectsExcessiveDuration() {
-        // Valid date but excessive duration (8 hours, max is 6)
-        LocalDateTime validStart = LocalDateTime.now().plusDays(8).withHour(10).withMinute(0).withSecond(0).withNano(0);
+        // Fixed date: 2099-12-25 (far future, always valid for 7+ days from now)
+        // But exceeds the 6-hour maximum duration
+        LocalDateTime validStart = TEST_REFERENCE_DATE.withHour(10).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime excessiveEnd = validStart.plusHours(8);
         
         ValidationException exception = assertThrows(
