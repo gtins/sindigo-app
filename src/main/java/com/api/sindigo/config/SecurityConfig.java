@@ -67,8 +67,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    @SuppressWarnings({"java:S4502", "java:S112"})
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    @SuppressWarnings("java:S4502")
+    public SecurityFilterChain filterChain(HttpSecurity http) {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
