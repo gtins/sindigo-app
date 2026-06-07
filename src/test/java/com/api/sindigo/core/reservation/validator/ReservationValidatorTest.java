@@ -3,37 +3,53 @@ package com.api.sindigo.core.reservation.validator;
 import com.api.sindigo.core.reservation.dto.ReservationCreateDTO;
 import com.api.sindigo.exception.ValidationException;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
 
 class ReservationValidatorTest {
+
+    private static final LocalDateTime TEST_REFERENCE_DATE =
+            LocalDateTime.of(2099, Month.DECEMBER, 25, 12, 0, 0);
 
     private final ReservationValidator validator = new ReservationValidator();
 
     @Test
     void validateReservationCreationAcceptsValidPayload() {
-        ReservationCreateDTO dto = ReservationCreateDTO.builder()
-                .area("Salão de festas")
-                .unitNumber("201")
-                .startTime(LocalDateTime.of(2026, 6, 11, 18, 0))
-                .endTime(LocalDateTime.of(2026, 6, 11, 22, 0))
-                .build();
+        LocalDateTime validStart = TEST_REFERENCE_DATE
+                .withHour(18)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        LocalDateTime validEnd = validStart.plusHours(4);
+
+        ReservationCreateDTO dto = buildReservationCreateDTO(validStart, validEnd);
 
         assertDoesNotThrow(() -> validator.validateReservationCreation(dto));
     }
 
     @Test
     void validateReservationCreationRejectsInvalidTimeRange() {
+        LocalDateTime baseDate = TEST_REFERENCE_DATE
+                .withHour(18)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        LocalDateTime invalidStart = baseDate.plusHours(2);
+        LocalDateTime invalidEnd = baseDate;
+
         ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> validator.validateTimeRange(
-                        LocalDateTime.of(2026, 6, 9, 22, 0),
-                        LocalDateTime.of(2026, 6, 9, 18, 0)
-                )
+                () -> validator.validateTimeRange(invalidStart, invalidEnd)
         );
 
         assertEquals("Hora de início deve ser antes da hora de fim", exception.getMessage());
@@ -41,33 +57,48 @@ class ReservationValidatorTest {
 
     @Test
     void validateReservationCreationRejectsInsufficientAdvanceNotice() {
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> validator.validateReservationCreation(
-                        ReservationCreateDTO.builder()
-                                .area("Salão de festas")
-                                .unitNumber("201")
-                                .startTime(LocalDateTime.of(2026, 6, 3, 18, 0))
-                                .endTime(LocalDateTime.of(2026, 6, 3, 22, 0))
-                                .build()
-                )
-        );
+        LocalDateTime mockedNow = LocalDateTime.of(2026, Month.JUNE, 10, 10, 0, 0);
 
-        assertEquals("As reservas devem ser feitas com no mínimo 7 dias de antecedência", exception.getMessage());
+        LocalDateTime invalidStart = mockedNow
+                .plusDays(3)
+                .withHour(18)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        LocalDateTime invalidEnd = invalidStart.plusHours(4);
+
+        ReservationCreateDTO dto = buildReservationCreateDTO(invalidStart, invalidEnd);
+
+        try (MockedStatic<LocalDateTime> mockedDateTime =
+                     mockStatic(LocalDateTime.class, CALLS_REAL_METHODS)) {
+
+            mockedDateTime.when(LocalDateTime::now).thenReturn(mockedNow);
+
+            ValidationException exception = assertThrows(
+                    ValidationException.class,
+                    () -> validator.validateReservationCreation(dto)
+            );
+
+            assertEquals("As reservas devem ser feitas com no mínimo 7 dias de antecedência", exception.getMessage());
+        }
     }
 
     @Test
     void validateReservationCreationRejectsExcessiveDuration() {
+        LocalDateTime validStart = TEST_REFERENCE_DATE
+                .withHour(10)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        LocalDateTime excessiveEnd = validStart.plusHours(8);
+
+        ReservationCreateDTO dto = buildReservationCreateDTO(validStart, excessiveEnd);
+
         ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> validator.validateReservationCreation(
-                        ReservationCreateDTO.builder()
-                                .area("Salão de festas")
-                                .unitNumber("201")
-                                .startTime(LocalDateTime.of(2026, 6, 11, 10, 0))
-                                .endTime(LocalDateTime.of(2026, 6, 11, 18, 0))
-                                .build()
-                )
+                () -> validator.validateReservationCreation(dto)
         );
 
         assertEquals("O período máximo permitido para uma reserva é de 6 horas", exception.getMessage());
@@ -82,5 +113,13 @@ class ReservationValidatorTest {
 
         assertEquals("Já existe uma reserva para esta área no período solicitado", exception.getMessage());
     }
-}
 
+    private ReservationCreateDTO buildReservationCreateDTO(LocalDateTime startTime, LocalDateTime endTime) {
+        return ReservationCreateDTO.builder()
+                .area("Salão de festas")
+                .unitNumber("201")
+                .startTime(startTime)
+                .endTime(endTime)
+                .build();
+    }
+}
