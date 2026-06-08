@@ -73,7 +73,7 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
           context: .
           file: ./Dockerfile
