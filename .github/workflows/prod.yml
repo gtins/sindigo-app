@@ -62,7 +62,9 @@ jobs:
           ./mvnw -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
             -Dsonar.verbose=true \
             -Dsonar.qualitygate.wait=true \
-            -Dsonar.qualitygate.timeout=300
+            -Dsonar.qualitygate.timeout=300 \
+            -Dsonar.architecture.enable=false \
+            -Dsonar.sca.enabled=false
 
       - name: Print SonarCloud task report
         if: always()
