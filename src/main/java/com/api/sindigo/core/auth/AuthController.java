@@ -15,7 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
+import java.time.Instant;
 import java.util.Map;
 
 @RestController
@@ -23,67 +23,56 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private static final String TIMESTAMP = "timestamp";
-    private static final String STATUS = "status";
-    private static final String ERROR = "error";
+    private static final String VALID = "valid";
+    private static final String REASON = "reason";
+    private static final String EXPIRES_AT = "expiresAt";
+
+    private static final String TOKEN_NOT_PROVIDED_MESSAGE = "Token não fornecido";
+    private static final String TOKEN_VALIDATION_ERROR_MESSAGE = "Erro ao validar token";
 
     private final UserService userService;
     private final JwtService jwtService;
 
     @PostMapping("/register")
     @RateLimited(maxRequests = 5, windowSeconds = 60, message = "Too many registration attempts. Please try again later.")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDTO dto) {
+    public ResponseEntity<Object> register(@Valid @RequestBody RegisterRequestDTO dto) {
         try {
             AuthResponseDTO response = userService.registerUser(dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
-            // Email duplicado
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.CONFLICT.value());
-            error.put(ERROR, e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+            return buildErrorResponse(HttpStatus.CONFLICT, e.getMessage());
         }
     }
 
     @PostMapping("/login")
     @RateLimited(maxRequests = 5, windowSeconds = 60, message = "Too many login attempts. Please try again later.")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO dto) {
+    public ResponseEntity<Object> login(@Valid @RequestBody LoginRequestDTO dto) {
         try {
             LoginResponseDTO response = userService.loginUser(dto);
             return ResponseEntity.ok(response);
         } catch (ResourceNotFoundException e) {
-            // Credenciais inválidas
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.UNAUTHORIZED.value());
-            error.put(ERROR, e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            return buildErrorResponse(HttpStatus.UNAUTHORIZED, e.getMessage());
         }
     }
 
     @PostMapping("/create-admin")
     @RateLimited(maxRequests = 3, windowSeconds = 300, message = "Too many admin creation attempts. Please try again in 5 minutes.")
-    public ResponseEntity<?> createAdmin(@Valid @RequestBody CreateAdminRequestDTO dto) {
+    public ResponseEntity<Object> createAdmin(@Valid @RequestBody CreateAdminRequestDTO dto) {
         try {
             AuthResponseDTO response = userService.createAdmin(dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
-            // Erro de validação ou chave secreta inválida
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.FORBIDDEN.value());
-            error.put(ERROR, e.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            return buildErrorResponse(HttpStatus.FORBIDDEN, e.getMessage());
         }
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, Object>> validateToken(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("valid", false, "reason", "Token não fornecido"));
+                        .body(Map.of(VALID, false, REASON, TOKEN_NOT_PROVIDED_MESSAGE));
             }
 
             String token = authHeader.substring(7);
@@ -91,20 +80,35 @@ public class AuthController {
 
             if (validation.isValid()) {
                 return ResponseEntity.ok(Map.of(
-                        "valid", true,
-                        "expiresAt", validation.getExpiresAt()
-                ));
-            } else {
-                return ResponseEntity.ok(Map.of(
-                        "valid", false,
-                        "reason", validation.getReason()
+                        VALID, true,
+                        EXPIRES_AT, validation.getExpiresAt()
                 ));
             }
+
+            return ResponseEntity.ok(Map.of(
+                    VALID, false,
+                    REASON, validation.getReason()
+            ));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("valid", false, "reason", "Erro ao validar token"));
+                    .body(Map.of(VALID, false, REASON, TOKEN_VALIDATION_ERROR_MESSAGE));
         }
     }
+
+    private ResponseEntity<Object> buildErrorResponse(HttpStatus status, String message) {
+        ErrorResponse response = new ErrorResponse(
+                Instant.now(),
+                status.value(),
+                message
+        );
+
+        return ResponseEntity.status(status).body(response);
+    }
+
+    private record ErrorResponse(
+            Instant timestamp,
+            int status,
+            String error
+    ) {
+    }
 }
-
-

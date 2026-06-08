@@ -2,8 +2,8 @@ package com.api.sindigo.core.user;
 
 import com.api.sindigo.core.user.dto.AuthResponseDTO;
 import com.api.sindigo.core.user.dto.ChangeRoleRequestDTO;
-import com.api.sindigo.core.user.dto.UserResponseDTO;
 import com.api.sindigo.core.user.dto.RegisterRequestDTO;
+import com.api.sindigo.core.user.dto.UserResponseDTO;
 import com.api.sindigo.core.user.entities.User;
 import com.api.sindigo.core.user.entities.UserRole;
 import com.api.sindigo.exception.BusinessRuleException;
@@ -17,11 +17,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
+import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/user")
@@ -30,165 +28,138 @@ public class UserController {
 
     private static final String USER_NOT_FOUND = "Usuário não encontrado";
     private static final String INVALID_USER_ID = "ID de usuário inválido";
-    private static final String TIMESTAMP = "timestamp";
-    private static final String STATUS = "status";
-    private static final String ERROR = "error";
+    private static final String USER_NOT_AUTHENTICATED = "Usuário não autenticado";
+    private static final String NOT_AUTHENTICATED = "Não autenticado";
+    private static final String ONLY_ADMIN_CAN_CHANGE_ROLES = "Apenas ADMIN pode alterar roles";
+    private static final String ONLY_ADMIN_CAN_LIST_USERS = "Apenas ADMIN pode listar usuários";
 
     private final UserService userService;
     private final UserRepository userRepository;
 
     @PostMapping
-    public ResponseEntity<?> createUser(@Valid @RequestBody RegisterRequestDTO dto) {
+    public ResponseEntity<Object> createUser(@Valid @RequestBody RegisterRequestDTO dto) {
         try {
             AuthResponseDTO response = userService.registerUser(dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (ValidationException e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.BAD_REQUEST.value());
-            error.put(ERROR, e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            return buildErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (BusinessRuleException e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.CONFLICT.value());
-            error.put(ERROR, e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+            return buildErrorResponse(HttpStatus.CONFLICT, e.getMessage());
         }
     }
 
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+    public ResponseEntity<Object> getCurrentUser(Authentication authentication) {
         try {
-            Object principal = authentication.getPrincipal();
-            if (principal == null) {
-                throw new ValidationException("Usuário não autenticado");
-            }
-            
-            String userId = (String) principal;
-            User user = userRepository.findById(UUID.fromString(userId))
+            UUID userId = extractAuthenticatedUserId(authentication);
+
+            User user = userRepository.findById(userId)
                     .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
-            UserResponseDTO response = UserResponseDTO.builder()
-                    .id(user.getId())
-                    .name(user.getName())
-                    .email(user.getEmail())
-                    .role(user.getRole())
-                    .createdAt(user.getCreatedAt())
-                    .build();
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(toUserResponseDTO(user));
         } catch (ValidationException | ResourceNotFoundException e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.UNAUTHORIZED.value());
-            error.put(ERROR, e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            return buildErrorResponse(HttpStatus.UNAUTHORIZED, e.getMessage());
         } catch (IllegalArgumentException e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.BAD_REQUEST.value());
-            error.put(ERROR, INVALID_USER_ID);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            return buildErrorResponse(HttpStatus.BAD_REQUEST, INVALID_USER_ID);
         }
     }
 
     @PutMapping("/change-role")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public ResponseEntity<?> changeUserRole(@RequestBody ChangeRoleRequestDTO dto, Authentication authentication) {
+    public ResponseEntity<Object> changeUserRole(
+            @RequestBody ChangeRoleRequestDTO dto,
+            Authentication authentication
+    ) {
         try {
-            // Validar se is ADMIN
-            Object principal = authentication.getPrincipal();
-            if (principal == null) {
-                throw new ValidationException("Usuário não autenticado");
-            }
+            UUID userId = extractAuthenticatedUserId(authentication);
 
-            String userId = (String) principal;
-            User adminUser = userRepository.findById(UUID.fromString(userId))
+            User adminUser = userRepository.findById(userId)
                     .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
             if (adminUser.getRole() != UserRole.ADMIN) {
-                throw new BusinessRuleException("Apenas ADMIN pode alterar roles");
+                throw new BusinessRuleException(ONLY_ADMIN_CAN_CHANGE_ROLES);
             }
 
             AuthResponseDTO response = userService.changeUserRole(dto.getUserId(), dto.getRole());
             return ResponseEntity.ok(response);
         } catch (ValidationException e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.UNAUTHORIZED.value());
-            error.put(ERROR, e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            return buildErrorResponse(HttpStatus.UNAUTHORIZED, e.getMessage());
         } catch (ResourceNotFoundException | BusinessRuleException e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.FORBIDDEN.value());
-            error.put(ERROR, e.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            return buildErrorResponse(HttpStatus.FORBIDDEN, e.getMessage());
         } catch (IllegalArgumentException e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.BAD_REQUEST.value());
-            error.put(ERROR, INVALID_USER_ID);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            return buildErrorResponse(HttpStatus.BAD_REQUEST, INVALID_USER_ID);
         }
     }
 
     @GetMapping("/all")
-    public ResponseEntity<?> getAllUsers(Authentication authentication) {
+    public ResponseEntity<Object> getAllUsers(Authentication authentication) {
         try {
-            // Validar autenticação
             if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of(ERROR, "Não autenticado"));
+                return buildErrorResponse(HttpStatus.UNAUTHORIZED, NOT_AUTHENTICATED);
             }
 
-            // Validar se é ADMIN
-            Object principal = authentication.getPrincipal();
-            if (principal == null) {
-                throw new ValidationException("Usuário não autenticado");
-            }
+            UUID userId = extractAuthenticatedUserId(authentication);
 
-            String userId = (String) principal;
-            User user = userRepository.findById(UUID.fromString(userId))
+            User user = userRepository.findById(userId)
                     .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
             if (user.getRole() != UserRole.ADMIN) {
-                throw new BusinessRuleException("Apenas ADMIN pode listar usuários");
+                throw new BusinessRuleException(ONLY_ADMIN_CAN_LIST_USERS);
             }
 
-            // Buscar todos os usuários
-            List<User> allUsers = userRepository.findAll();
-            List<UserResponseDTO> response = allUsers.stream()
-                    .map(u -> UserResponseDTO.builder()
-                            .id(u.getId())
-                            .name(u.getName())
-                            .email(u.getEmail())
-                            .role(u.getRole())
-                            .createdAt(u.getCreatedAt())
-                            .build())
-                    .collect(Collectors.toList());
+            List<UserResponseDTO> response = userRepository.findAll()
+                    .stream()
+                    .map(this::toUserResponseDTO)
+                    .toList();
 
             return ResponseEntity.ok(response);
         } catch (ValidationException e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.UNAUTHORIZED.value());
-            error.put(ERROR, e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            return buildErrorResponse(HttpStatus.UNAUTHORIZED, e.getMessage());
         } catch (ResourceNotFoundException | BusinessRuleException e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.FORBIDDEN.value());
-            error.put(ERROR, e.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            return buildErrorResponse(HttpStatus.FORBIDDEN, e.getMessage());
         } catch (IllegalArgumentException e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put(TIMESTAMP, java.time.Instant.now());
-            error.put(STATUS, HttpStatus.BAD_REQUEST.value());
-            error.put(ERROR, INVALID_USER_ID);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            return buildErrorResponse(HttpStatus.BAD_REQUEST, INVALID_USER_ID);
         }
     }
-}
 
+    private UUID extractAuthenticatedUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal() == null) {
+            throw new ValidationException(USER_NOT_AUTHENTICATED);
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof String principalAsString) {
+            return UUID.fromString(principalAsString);
+        }
+
+        return UUID.fromString(authentication.getName());
+    }
+
+    private UserResponseDTO toUserResponseDTO(User user) {
+        return UserResponseDTO.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
+    private ResponseEntity<Object> buildErrorResponse(HttpStatus status, String message) {
+        ErrorResponse response = new ErrorResponse(
+                Instant.now(),
+                status.value(),
+                message
+        );
+
+        return ResponseEntity.status(status).body(response);
+    }
+
+    private record ErrorResponse(
+            Instant timestamp,
+            int status,
+            String error
+    ) {
+    }
+}

@@ -9,7 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -18,133 +17,136 @@ import java.util.UUID;
 @Slf4j
 public class MembershipController {
 
-    private static final String ERROR = "error";
+    private static final String ROLE_ADMIN = "ROLE_ADMIN";
+    private static final String ROLE_SINDICO = "ROLE_SINDICO";
+
+    private static final String ADD_MEMBER_FORBIDDEN_MESSAGE = "Apenas ADMIN e SINDICO podem adicionar moradores";
+    private static final String LIST_MEMBERS_FORBIDDEN_MESSAGE = "Apenas ADMIN e SINDICO podem listar moradores";
+    private static final String REMOVE_MEMBER_FORBIDDEN_MESSAGE = "Apenas ADMIN pode remover moradores";
+    private static final String USER_NOT_AUTHENTICATED_MESSAGE = "Usuário não autenticado";
+
+    private static final String ADD_MEMBER_ERROR_MESSAGE = "Erro ao adicionar morador";
+    private static final String LIST_MEMBERS_ERROR_MESSAGE = "Erro ao listar moradores";
+    private static final String REMOVE_MEMBER_ERROR_MESSAGE = "Erro ao remover morador";
+    private static final String FETCH_CONDOMINIUMS_ERROR_MESSAGE = "Erro ao buscar condomínios";
+    private static final String MEMBER_REMOVED_SUCCESSFULLY_MESSAGE = "Morador removido com sucesso";
 
     private final MembershipService membershipService;
 
-    /**
-     * POST /condominium/{condominiumId}/members/{userId}
-     * Adiciona um morador a um condomínio
-     * Apenas ADMIN e SINDICO conseguem
-     */
     @PostMapping("/{condominiumId}/members/{userId}")
-    public ResponseEntity<?> addMember(
+    public ResponseEntity<Object> addMember(
             Authentication authentication,
             @PathVariable UUID condominiumId,
             @PathVariable UUID userId) {
-        
+
         try {
-            // Validar se é ADMIN ou SINDICO
             if (!isAdminOrSindico(authentication)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of(ERROR, "Apenas ADMIN e SINDICO podem adicionar moradores"));
+                return buildErrorResponse(HttpStatus.FORBIDDEN, ADD_MEMBER_FORBIDDEN_MESSAGE);
             }
 
             MembershipResponseDTO response = membershipService.addMember(condominiumId, userId);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
-
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of(ERROR, e.getMessage()));
+            return buildErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(ERROR, "Erro ao adicionar morador"));
+            log.error(ADD_MEMBER_ERROR_MESSAGE, e);
+            return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ADD_MEMBER_ERROR_MESSAGE);
         }
     }
 
-    /**
-     * GET /condominium/{condominiumId}/members
-     * Lista todos os moradores de um condomínio
-     */
     @GetMapping("/{condominiumId}/members")
-    public ResponseEntity<?> getMembers(
+    public ResponseEntity<Object> getMembers(
             Authentication authentication,
             @PathVariable UUID condominiumId) {
-        
+
         try {
-            // Validar se é ADMIN ou SINDICO
             if (!isAdminOrSindico(authentication)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of(ERROR, "Apenas ADMIN e SINDICO podem listar moradores"));
+                return buildErrorResponse(HttpStatus.FORBIDDEN, LIST_MEMBERS_FORBIDDEN_MESSAGE);
             }
 
             List<MembershipResponseDTO> members = membershipService.getMembers(condominiumId);
             return ResponseEntity.ok(members);
-
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(ERROR, "Erro ao listar moradores"));
+            log.error(LIST_MEMBERS_ERROR_MESSAGE, e);
+            return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, LIST_MEMBERS_ERROR_MESSAGE);
         }
     }
 
-    /**
-     * DELETE /condominium/{condominiumId}/members/{userId}
-     * Remove um morador de um condomínio
-     * Apenas ADMIN consegue
-     */
     @DeleteMapping("/{condominiumId}/members/{userId}")
-    public ResponseEntity<?> removeMember(
+    public ResponseEntity<Object> removeMember(
             Authentication authentication,
             @PathVariable UUID condominiumId,
             @PathVariable UUID userId) {
-        
+
         try {
-            // Validar se é ADMIN
             if (!isAdmin(authentication)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of(ERROR, "Apenas ADMIN pode remover moradores"));
+                return buildErrorResponse(HttpStatus.FORBIDDEN, REMOVE_MEMBER_FORBIDDEN_MESSAGE);
             }
 
             membershipService.removeMember(condominiumId, userId);
-            return ResponseEntity.ok(Map.of("message", "Morador removido com sucesso"));
-
+            return ResponseEntity.ok(new SuccessResponse(MEMBER_REMOVED_SUCCESSFULLY_MESSAGE));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(ERROR, "Erro ao remover morador"));
+            log.error(REMOVE_MEMBER_ERROR_MESSAGE, e);
+            return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, REMOVE_MEMBER_ERROR_MESSAGE);
         }
     }
 
-     /**
-      * GET /condominiums/my-condominiums
-      * Retorna os condomínios onde o usuário autenticado foi adicionado como membro
-      * Funciona para qualquer role: ADMIN, SINDICO, MORADOR
-      * Diferente de GET /condominiums que retorna apenas os criados pelo usuário
-      */
-     @GetMapping("/my-condominiums")
-     public ResponseEntity<?> getMyCondominiums(Authentication authentication) {
+    @GetMapping("/my-condominiums")
+    public ResponseEntity<Object> getMyCondominiums(Authentication authentication) {
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of(ERROR, "Usuário não autenticado"));
+            if (!isAuthenticated(authentication) || authentication.getPrincipal() == null) {
+                return buildErrorResponse(HttpStatus.UNAUTHORIZED, USER_NOT_AUTHENTICATED_MESSAGE);
             }
 
-            Object principal = authentication.getPrincipal();
-            if (principal == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of(ERROR, "Usuário não autenticado"));
-            }
+            UUID userId = extractUserId(authentication);
+            List<MembershipResponseDTO> condominiums = membershipService.getCondominiumsByUser(userId);
 
-            String userId = (String) principal;
-            List<MembershipResponseDTO> condominiums = membershipService.getCondominiumsByUser(UUID.fromString(userId));
             return ResponseEntity.ok(condominiums);
-
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(ERROR, "Erro ao buscar condomínios"));
+            log.error(FETCH_CONDOMINIUMS_ERROR_MESSAGE, e);
+            return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, FETCH_CONDOMINIUMS_ERROR_MESSAGE);
         }
     }
 
-    private boolean isAdmin(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()) return false;
-        return auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    private UUID extractUserId(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof String principalAsString) {
+            return UUID.fromString(principalAsString);
+        }
+
+        return UUID.fromString(authentication.getName());
     }
 
-    private boolean isAdminOrSindico(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()) return false;
-        return auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || 
-                              a.getAuthority().equals("ROLE_SINDICO"));
+    private boolean isAdmin(Authentication authentication) {
+        return hasAuthority(authentication, ROLE_ADMIN);
+    }
+
+    private boolean isAdminOrSindico(Authentication authentication) {
+        return hasAuthority(authentication, ROLE_ADMIN) || hasAuthority(authentication, ROLE_SINDICO);
+    }
+
+    private boolean hasAuthority(Authentication authentication, String expectedAuthority) {
+        if (!isAuthenticated(authentication)) {
+            return false;
+        }
+
+        return authentication.getAuthorities()
+                .stream()
+                .anyMatch(authority -> expectedAuthority.equals(authority.getAuthority()));
+    }
+
+    private boolean isAuthenticated(Authentication authentication) {
+        return authentication != null && authentication.isAuthenticated();
+    }
+
+    private ResponseEntity<Object> buildErrorResponse(HttpStatus status, String message) {
+        return ResponseEntity.status(status).body(new ErrorResponse(message));
+    }
+
+    private record ErrorResponse(String error) {
+    }
+
+    private record SuccessResponse(String message) {
     }
 }
-

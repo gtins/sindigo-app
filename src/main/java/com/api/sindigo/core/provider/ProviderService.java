@@ -15,11 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ProviderService {
+
+    private static final String CONDOMINIUM_ACCESS_ERROR_MESSAGE =
+            "Condominium not found or you don't have access";
+
+    private static final String PROVIDER_NOT_FOUND_MESSAGE = "Provider not found";
 
     private final ProviderRepository providerRepository;
     private final CondominiumRepository condominiumRepository;
@@ -33,7 +37,7 @@ public class ProviderService {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
         Condominium condominium = condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
         Provider provider = new Provider();
         provider.setName(dto.getName());
@@ -52,10 +56,12 @@ public class ProviderService {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
         condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
-        List<Provider> providers = providerRepository.findByCondominiumIdOrderByNameAsc(condominiumId);
-        return providers.stream().map(this::mapToDTO).collect(Collectors.toList());
+        return providerRepository.findByCondominiumIdOrderByNameAsc(condominiumId)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -63,10 +69,10 @@ public class ProviderService {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
         condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
         Provider provider = providerRepository.findByIdAndCondominiumId(providerId, condominiumId)
-                .orElseThrow(() -> new IllegalArgumentException("Provider not found"));
+                .orElseThrow(() -> new IllegalArgumentException(PROVIDER_NOT_FOUND_MESSAGE));
 
         return mapToDTO(provider);
     }
@@ -78,10 +84,10 @@ public class ProviderService {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
         condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
         Provider provider = providerRepository.findByIdAndCondominiumId(providerId, condominiumId)
-                .orElseThrow(() -> new IllegalArgumentException("Provider not found"));
+                .orElseThrow(() -> new IllegalArgumentException(PROVIDER_NOT_FOUND_MESSAGE));
 
         provider.setName(dto.getName());
         provider.setServiceType(dto.getServiceType());
@@ -98,10 +104,10 @@ public class ProviderService {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
         condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
         Provider provider = providerRepository.findByIdAndCondominiumId(providerId, condominiumId)
-                .orElseThrow(() -> new IllegalArgumentException("Provider not found"));
+                .orElseThrow(() -> new IllegalArgumentException(PROVIDER_NOT_FOUND_MESSAGE));
 
         providerRepository.delete(provider);
     }
@@ -117,10 +123,11 @@ public class ProviderService {
         dto.setCreatedAt(provider.getCreatedAt());
         dto.setUpdatedAt(provider.getUpdatedAt());
         dto.setCondominiumId(provider.getCondominium().getId());
-        dto.setActivityIds(provider.getActivities().stream().map(Activity::getId).collect(Collectors.toList()));
+        dto.setActivityIds(provider.getActivities()
+                .stream()
+                .map(Activity::getId)
+                .toList());
+
         return dto;
     }
 }
-
-
-
