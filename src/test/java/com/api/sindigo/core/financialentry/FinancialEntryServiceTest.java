@@ -139,5 +139,94 @@ class FinancialEntryServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> financialEntryService.addFinancialEntry(condominiumId, dto));
     }
+
+    @Test
+    void getBalanceReturnsZeroesWhenNoTransactions() {
+        when(financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.INCOME))
+                .thenReturn(null);
+        when(financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.EXPENSE))
+                .thenReturn(null);
+
+        BalanceResponseDTO response = financialEntryService.getBalance(condominiumId);
+
+        assertEquals(condominiumId, response.getCondominiumId());
+        assertEquals(BigDecimal.ZERO, response.getTotalIncome());
+        assertEquals(BigDecimal.ZERO, response.getTotalExpense());
+        assertEquals(BigDecimal.ZERO, response.getNetBalance());
+    }
+
+    @Test
+    void listByCondominiumReturnsEmptyListWhenNoEntries() {
+        when(financialEntryRepository.findByCondominiumId(condominiumId)).thenReturn(List.of());
+
+        List<FinancialEntryResponseDTO> response = financialEntryService.listByCondominium(condominiumId);
+
+        assertEquals(0, response.size());
+    }
+
+    @Test
+    void listByCondominiumReturnsMultipleEntries() {
+        FinancialEntry entry1 = FinancialEntry.builder()
+                .id(UUID.randomUUID())
+                .type(FinancialEntryType.INCOME)
+                .amount(new BigDecimal("500.00"))
+                .date(LocalDate.of(2026, 6, 1))
+                .description("Taxa 1")
+                .condominium(condominium)
+                .createdAt(LocalDate.of(2026, 6, 1))
+                .build();
+
+        FinancialEntry entry2 = FinancialEntry.builder()
+                .id(UUID.randomUUID())
+                .type(FinancialEntryType.EXPENSE)
+                .amount(new BigDecimal("100.00"))
+                .date(LocalDate.of(2026, 6, 2))
+                .description("Manutenção")
+                .condominium(condominium)
+                .createdAt(LocalDate.of(2026, 6, 2))
+                .build();
+
+        when(financialEntryRepository.findByCondominiumId(condominiumId)).thenReturn(List.of(entry1, entry2));
+
+        List<FinancialEntryResponseDTO> response = financialEntryService.listByCondominium(condominiumId);
+
+        assertEquals(2, response.size());
+    }
+
+    @Test
+    void addFinancialEntryWithExpenseType() {
+        FinancialEntryCreateDTO dto = FinancialEntryCreateDTO.builder()
+                .type(FinancialEntryType.EXPENSE)
+                .amount(new BigDecimal("250.00"))
+                .date(LocalDate.of(2026, 6, 5))
+                .description("Conta de água")
+                .build();
+
+        when(financialEntryRepository.save(any(FinancialEntry.class))).thenAnswer(invocation -> {
+            FinancialEntry entry = invocation.getArgument(0);
+            entry.setId(UUID.randomUUID());
+            entry.setCreatedAt(LocalDate.of(2026, 6, 5));
+            return entry;
+        });
+
+        FinancialEntryResponseDTO response = financialEntryService.addFinancialEntry(condominiumId, dto);
+
+        assertEquals(FinancialEntryType.EXPENSE, response.getType());
+        assertEquals(new BigDecimal("250.00"), response.getAmount());
+    }
+
+    @Test
+    void getBalanceCalculatesNegativeNetBalance() {
+        when(financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.INCOME))
+                .thenReturn(new BigDecimal("100.00"));
+        when(financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.EXPENSE))
+                .thenReturn(new BigDecimal("300.00"));
+
+        BalanceResponseDTO response = financialEntryService.getBalance(condominiumId);
+
+        assertEquals(new BigDecimal("100.00"), response.getTotalIncome());
+        assertEquals(new BigDecimal("300.00"), response.getTotalExpense());
+        assertEquals(new BigDecimal("-200.00"), response.getNetBalance());
+    }
 }
 

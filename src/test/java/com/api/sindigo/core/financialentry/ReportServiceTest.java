@@ -77,6 +77,88 @@ class ReportServiceTest {
         verify(financialEntryRepository).findByCondominiumIdAndTypeOrderByDateDesc(condominiumId, FinancialEntryType.EXPENSE);
     }
 
+    @Test
+    void exportFinancialEntriesCSVByTypeIncomeFilters() {
+        FinancialEntry income = buildEntry(FinancialEntryType.INCOME, new BigDecimal("300.00"), LocalDate.of(2026, 6, 5), "doacao");
+
+        when(financialEntryRepository.findByCondominiumIdAndTypeOrderByDateDesc(condominiumId, FinancialEntryType.INCOME))
+                .thenReturn(List.of(income));
+
+        String csv = reportService.exportFinancialEntriesCSVByType(condominiumId, FinancialEntryType.INCOME);
+
+        assertTrue(csv.contains("Entrada"));
+        assertTrue(csv.contains("300.00"));
+        assertTrue(csv.contains("Doacao"));
+    }
+
+    @Test
+    void exportFinancialEntriesCSVWithLargeAmounts() {
+        FinancialEntry largeIncome = buildEntry(FinancialEntryType.INCOME, new BigDecimal("9999.99"), LocalDate.of(2026, 6, 1), "grande arrecadação");
+        FinancialEntry largeExpense = buildEntry(FinancialEntryType.EXPENSE, new BigDecimal("5555.55"), LocalDate.of(2026, 6, 2), "investimento grande");
+
+        when(financialEntryRepository.findByCondominiumIdOrderByDateDesc(condominiumId))
+                .thenReturn(List.of(largeIncome, largeExpense));
+
+        String csv = reportService.exportFinancialEntriesCSV(condominiumId);
+
+        assertTrue(csv.contains("9999.99"));
+        assertTrue(csv.contains("5555.55"));
+        assertTrue(csv.contains("4444.44")); // balance: 9999.99 - 5555.55
+    }
+
+    @Test
+    void exportFinancialEntriesCSVWithEmptyList() {
+        when(financialEntryRepository.findByCondominiumIdOrderByDateDesc(condominiumId))
+                .thenReturn(List.of());
+
+        String csv = reportService.exportFinancialEntriesCSV(condominiumId);
+
+        assertTrue(csv.contains("Resumo"));
+        assertTrue(csv.contains("0.00"));
+    }
+
+    @Test
+    void exportFinancialEntriesCSVFormatsDateCorrectly() {
+        FinancialEntry entry = buildEntry(FinancialEntryType.INCOME, new BigDecimal("100.00"), LocalDate.of(2026, 12, 25), "teste data");
+
+        when(financialEntryRepository.findByCondominiumIdOrderByDateDesc(condominiumId))
+                .thenReturn(List.of(entry));
+
+        String csv = reportService.exportFinancialEntriesCSV(condominiumId);
+
+        assertTrue(csv.contains("25/12/2026"));
+    }
+
+    @Test
+    void exportFinancialEntriesCSVCapitalizesDescriptions() {
+        FinancialEntry entry = buildEntry(FinancialEntryType.INCOME, new BigDecimal("100.00"), LocalDate.of(2026, 6, 1), "DESCRICAO EM MAIUSCULA");
+
+        when(financialEntryRepository.findByCondominiumIdOrderByDateDesc(condominiumId))
+                .thenReturn(List.of(entry));
+
+        String csv = reportService.exportFinancialEntriesCSV(condominiumId);
+
+        assertTrue(csv.contains("Descricao em maiuscula"));
+    }
+
+    @Test
+    void exportFinancialEntriesCSVCalculatesBalanceCorrectly() {
+        FinancialEntry income1 = buildEntry(FinancialEntryType.INCOME, new BigDecimal("1000.00"), LocalDate.of(2026, 6, 1), "entrada 1");
+        FinancialEntry income2 = buildEntry(FinancialEntryType.INCOME, new BigDecimal("500.00"), LocalDate.of(2026, 6, 2), "entrada 2");
+        FinancialEntry expense1 = buildEntry(FinancialEntryType.EXPENSE, new BigDecimal("200.00"), LocalDate.of(2026, 6, 3), "saida 1");
+        FinancialEntry expense2 = buildEntry(FinancialEntryType.EXPENSE, new BigDecimal("150.00"), LocalDate.of(2026, 6, 4), "saida 2");
+
+        when(financialEntryRepository.findByCondominiumIdOrderByDateDesc(condominiumId))
+                .thenReturn(List.of(income1, income2, expense1, expense2));
+
+        String csv = reportService.exportFinancialEntriesCSV(condominiumId);
+
+        // Total income: 1500, total expense: 350, balance: 1150
+        assertTrue(csv.contains("1500.00"));
+        assertTrue(csv.contains("350.00"));
+        assertTrue(csv.contains("1150.00"));
+    }
+
     private FinancialEntry buildEntry(FinancialEntryType type, BigDecimal amount, LocalDate date, String description) {
         return FinancialEntry.builder()
                 .id(UUID.randomUUID())

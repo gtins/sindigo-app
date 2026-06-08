@@ -85,6 +85,198 @@ class AuditAspectTest {
 
         verify(auditLogRepository, never()).save(any(AuditLog.class));
     }
+
+    @Test
+    void auditOperationHandlesPutRequests() {
+        UUID resourceId = UUID.randomUUID();
+        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/v1/tickets/" + resourceId);
+        request.addHeader("User-Agent", "JUnit");
+        request.addHeader("X-Forwarded-For", "192.168.1.1");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                "user@example.com",
+                "token",
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        JoinPoint joinPoint = mock(JoinPoint.class);
+
+        auditAspect.auditOperation(joinPoint, ResponseEntity.ok(Map.of("id", "123", "status", "updated")));
+
+        var captor = forClass(AuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
+
+        AuditLog saved = captor.getValue();
+        assertEquals("user@example.com", saved.getCreatedBy());
+        assertEquals("UPDATE", saved.getAction());
+        assertEquals("PUT", saved.getHttpMethod());
+    }
+
+    @Test
+    void auditOperationHandlesDeleteRequests() {
+        UUID resourceId = UUID.randomUUID();
+        MockHttpServletRequest request = new MockHttpServletRequest("DELETE", "/api/v1/tickets/" + resourceId);
+        request.addHeader("User-Agent", "Chrome");
+        request.addHeader("X-Forwarded-For", "172.16.0.1");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                "admin@example.com",
+                "token",
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        JoinPoint joinPoint = mock(JoinPoint.class);
+
+        auditAspect.auditOperation(joinPoint, ResponseEntity.ok(Map.of("message", "Deleted")));
+
+        var captor = forClass(AuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
+
+        AuditLog saved = captor.getValue();
+        assertEquals("DELETE", saved.getAction());
+        assertEquals(200, saved.getHttpStatus());
+    }
+
+    @Test
+    void auditOperationHandlesHeadRequests() {
+        MockHttpServletRequest request = new MockHttpServletRequest("HEAD", "/api/v1/tickets");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        JoinPoint joinPoint = mock(JoinPoint.class);
+
+        auditAspect.auditOperation(joinPoint, Map.of());
+
+        verify(auditLogRepository, never()).save(any(AuditLog.class));
+    }
+
+    @Test
+    void auditOperationCapsturesiPAddressFromXForwardedFor() {
+        UUID resourceId = UUID.randomUUID();
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/condominiums/" + resourceId);
+        request.addHeader("X-Forwarded-For", "203.0.113.5, 198.51.100.12");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                "user@example.com",
+                "token",
+                List.of()
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        JoinPoint joinPoint = mock(JoinPoint.class);
+
+        auditAspect.auditOperation(joinPoint, ResponseEntity.ok(Map.of("id", "456")));
+
+        var captor = forClass(AuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
+
+        AuditLog saved = captor.getValue();
+        assertEquals("203.0.113.5", saved.getIpAddress());
+    }
+
+    @Test
+    void auditOperationHandlesResponseEntityWithErrorStatus() {
+        UUID resourceId = UUID.randomUUID();
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/tickets/" + resourceId);
+        request.addHeader("User-Agent", "Firefox");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                "user@example.com",
+                "token",
+                List.of()
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        JoinPoint joinPoint = mock(JoinPoint.class);
+
+        auditAspect.auditOperation(joinPoint, ResponseEntity.badRequest().body(Map.of("error", "Invalid")));
+
+        var captor = forClass(AuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
+
+        AuditLog saved = captor.getValue();
+        assertEquals(400, saved.getHttpStatus());
+    }
+
+    @Test
+    void auditOperationRemovesUserAgentIfNotPresent() {
+        UUID resourceId = UUID.randomUUID();
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/activities/" + resourceId);
+        // No User-Agent header added
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                "user@example.com",
+                "token",
+                List.of()
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        JoinPoint joinPoint = mock(JoinPoint.class);
+
+        auditAspect.auditOperation(joinPoint, ResponseEntity.ok(Map.of()));
+
+        var captor = forClass(AuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
+
+        AuditLog saved = captor.getValue();
+        assertNotNull(saved);
+    }
+
+    @Test
+    void auditOperationIdentifiesCondominiumResource() {
+        UUID resourceId = UUID.randomUUID();
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/condominiums/" + resourceId);
+        request.addHeader("User-Agent", "Test");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                "user@example.com",
+                "token",
+                List.of()
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        JoinPoint joinPoint = mock(JoinPoint.class);
+
+        auditAspect.auditOperation(joinPoint, ResponseEntity.ok(Map.of()));
+
+        var captor = forClass(AuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
+
+        AuditLog saved = captor.getValue();
+        assertEquals("Condominium", saved.getResource());
+    }
+
+    @Test
+    void auditOperationIdentifiesActivityResource() {
+        UUID resourceId = UUID.randomUUID();
+        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/v1/activities/" + resourceId);
+        request.addHeader("User-Agent", "Test");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                "user@example.com",
+                "token",
+                List.of()
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        JoinPoint joinPoint = mock(JoinPoint.class);
+
+        auditAspect.auditOperation(joinPoint, ResponseEntity.ok(Map.of()));
+
+        var captor = forClass(AuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
+
+        AuditLog saved = captor.getValue();
+        assertEquals("Activity", saved.getResource());
+    }
 }
 
 

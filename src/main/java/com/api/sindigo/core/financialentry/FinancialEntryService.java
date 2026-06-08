@@ -72,8 +72,14 @@ public class FinancialEntryService {
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have permission to view balance"));
 
         BigDecimal totalIncome = financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.INCOME);
+        if (totalIncome == null) {
+            totalIncome = BigDecimal.ZERO;
+        }
 
         BigDecimal totalExpense = financialEntryRepository.sumByCondominiumIdAndType(condominiumId, FinancialEntryType.EXPENSE);
+        if (totalExpense == null) {
+            totalExpense = BigDecimal.ZERO;
+        }
 
         BigDecimal netBalance = totalIncome.subtract(totalExpense);
 
