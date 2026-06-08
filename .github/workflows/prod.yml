@@ -13,6 +13,9 @@ permissions:
   contents: read
   pull-requests: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test-and-sonar:
     name: Test, coverage and SonarCloud
@@ -41,21 +44,41 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: Run tests and generate coverage
+      - name: Run tests and generate JaCoCo coverage
         run: |
           ./mvnw -B clean verify
 
-      - name: Check JaCoCo report
+      - name: Check JaCoCo XML report
         run: |
-          echo "Checking JaCoCo report..."
+          echo "Checking JaCoCo XML report..."
           ls -la target/site/jacoco
           test -f target/site/jacoco/jacoco.xml
+          echo "JaCoCo XML report found."
 
       - name: Analyze with SonarCloud
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          ./mvnw -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          ./mvnw -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
+            -Dsonar.verbose=true \
+            -Dsonar.qualitygate.wait=true \
+            -Dsonar.qualitygate.timeout=300
+
+      - name: Print SonarCloud task report
+        if: always()
+        run: |
+          echo "===== SonarCloud report-task.txt ====="
+          if [ -f target/sonar/report-task.txt ]; then
+            cat target/sonar/report-task.txt
+          else
+            echo "target/sonar/report-task.txt not found"
+          fi
+
+      - name: Print Sonar target directory
+        if: always()
+        run: |
+          echo "===== target/sonar directory ====="
+          ls -la target/sonar || true
 
   build-and-push:
     name: Build and push Docker image
