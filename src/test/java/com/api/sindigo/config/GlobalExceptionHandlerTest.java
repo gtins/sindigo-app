@@ -9,10 +9,10 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
-import java.util.Map;
+import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -25,7 +25,7 @@ class GlobalExceptionHandlerTest {
         var response = handler.handleBusinessRuleException(new BusinessRuleException("regra quebrada"));
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertBodyMessage(response.getBody(), "regra quebrada");
+        assertErrorResponse(response.getBody(), 400, "Bad Request", "regra quebrada");
     }
 
     @Test
@@ -33,7 +33,7 @@ class GlobalExceptionHandlerTest {
         var response = handler.handleResourceNotFoundException(new ResourceNotFoundException("não achou"));
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertBodyMessage(response.getBody(), "não achou");
+        assertErrorResponse(response.getBody(), 404, "Not Found", "não achou");
     }
 
     @Test
@@ -41,21 +41,27 @@ class GlobalExceptionHandlerTest {
         var response = handler.handleValidationException(new ValidationException("inválido"));
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertBodyMessage(response.getBody(), "inválido");
+        assertErrorResponse(response.getBody(), 400, "Bad Request", "inválido");
     }
 
     @Test
     void handlesUploadSizeExceededExceptionAsPayloadTooLarge() {
         var response = handler.handleMaxUploadSizeExceededException(new MaxUploadSizeExceededException(10L));
 
-        assertEquals(413, response.getStatusCode().value());
-        assertBodyMessage(response.getBody(), "File size exceeds maximum allowed size of 10MB");
+        assertEquals(HttpStatus.PAYLOAD_TOO_LARGE, response.getStatusCode());
+        assertErrorResponse(
+                response.getBody(),
+                413,
+                "Payload Too Large",
+                "File size exceeds maximum allowed size of 10MB"
+        );
     }
 
     @Test
     void handlesS3ExceptionAsInternalServerError() {
         S3Exception ex = mock(S3Exception.class);
         AwsErrorDetails details = mock(AwsErrorDetails.class);
+
         when(ex.awsErrorDetails()).thenReturn(details);
         when(details.errorCode()).thenReturn("InternalError");
         when(ex.getMessage()).thenReturn("boom");
@@ -63,7 +69,12 @@ class GlobalExceptionHandlerTest {
         var response = handler.handleS3Exception(ex);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertBodyMessage(response.getBody(), "Error communicating with storage service. Please try again later.");
+        assertErrorResponse(
+                response.getBody(),
+                500,
+                "Internal Server Error",
+                "Error communicating with storage service. Please try again later."
+        );
     }
 
     @Test
@@ -71,18 +82,34 @@ class GlobalExceptionHandlerTest {
         var response = handler.handleGenericException(new RuntimeException("boom"));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertBodyMessage(response.getBody(), "An unexpected error occurred. Please try again later.");
+        assertErrorResponse(
+                response.getBody(),
+                500,
+                "Internal Server Error",
+                "An unexpected error occurred. Please try again later."
+        );
     }
 
-    @SuppressWarnings("unchecked")
-    private void assertBodyMessage(Object body, String expectedMessage) {
-        assertTrue(body instanceof Map);
-        Map<String, Object> map = (Map<String, Object>) body;
-        assertEquals(expectedMessage, map.get("message"));
-        assertTrue(map.containsKey("timestamp"));
-        assertTrue(map.containsKey("status"));
-        assertTrue(map.containsKey("error"));
+    private void assertErrorResponse(
+            Object body,
+            int expectedStatus,
+            String expectedError,
+            String expectedMessage
+    ) {
+        assertNotNull(body);
+        assertNotNull(readField(body, "timestamp"));
+        assertEquals(expectedStatus, readField(body, "status"));
+        assertEquals(expectedError, readField(body, "error"));
+        assertEquals(expectedMessage, readField(body, "message"));
+    }
+
+    private Object readField(Object body, String accessorName) {
+        try {
+            Method method = body.getClass().getDeclaredMethod(accessorName);
+            method.setAccessible(true);
+            return method.invoke(body);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError("Could not read error response field: " + accessorName, e);
+        }
     }
 }
-
-

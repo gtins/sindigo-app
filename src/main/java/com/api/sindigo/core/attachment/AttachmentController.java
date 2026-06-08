@@ -1,12 +1,13 @@
 package com.api.sindigo.core.attachment;
 
-import com.api.sindigo.core.attachment.dto.AttachmentResponseDTO;
-import com.api.sindigo.core.ticket.TicketRepository;
 import com.api.sindigo.core.activityinstance.ActivityInstanceRepository;
-import com.api.sindigo.core.user.UserRepository;
+import com.api.sindigo.core.attachment.dto.AttachmentResponseDTO;
 import com.api.sindigo.core.attachment.dto.AttachmentUploadDTO;
 import com.api.sindigo.core.attachment.entities.Attachment;
 import com.api.sindigo.core.attachment.enums.AttachmentCategory;
+import com.api.sindigo.core.ticket.TicketRepository;
+import com.api.sindigo.core.user.UserRepository;
+import com.api.sindigo.core.user.entities.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,7 +17,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/attachments")
@@ -24,56 +28,55 @@ import java.util.*;
 @Slf4j
 public class AttachmentController {
 
+    private static final String ERROR_RESPONSE_KEY = "error";
+    private static final String URL_RESPONSE_KEY = "url";
+
+    private static final String TICKET_NOT_FOUND_MESSAGE = "Ticket not found";
+    private static final String ACTIVITY_ID_REQUIRED_MESSAGE = "Activity ID is required";
+    private static final String ACTIVITY_WITHOUT_TICKET_MESSAGE = "Activity does not have associated ticket";
+    private static final String UNEXPECTED_ERROR_MESSAGE = "Unexpected error";
+    private static final String UPLOAD_ERROR_PREFIX = "Error uploading file: ";
+
     private final AttachmentService attachmentService;
     private final UserRepository userRepository;
     private final TicketRepository ticketRepository;
     private final ActivityInstanceRepository activityInstanceRepository;
 
-    /**
-     * Upload de arquivo para um chamado (abertura ou fechamento)
-     * POST /api/v1/attachments/ticket/{ticketId}/upload
-     */
     @PostMapping("/ticket/{ticketId}/upload")
-    public ResponseEntity<?> uploadTicketAttachment(
+    public ResponseEntity<Object> uploadTicketAttachment(
             @PathVariable UUID ticketId,
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "category", defaultValue = "ticket_opening_evidence") String category,
             Authentication authentication) {
         try {
             var ticket = ticketRepository.findById(ticketId)
-                    .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
-            
-            // Extrair usuário do authentication - tenta UUID primeiro, depois email
-            var currentUser = extractUserFromAuthentication(authentication);
-            
+                    .orElseThrow(() -> new IllegalArgumentException(TICKET_NOT_FOUND_MESSAGE));
+
+            User currentUser = extractUserFromAuthentication(authentication);
             AttachmentCategory attachmentCategory = AttachmentCategory.fromCode(category);
-            
+
             AttachmentUploadDTO uploadDTO = AttachmentUploadDTO.builder()
                     .condominium(ticket.getCondominium())
                     .ticket(ticket)
                     .uploadedBy(currentUser)
                     .category(attachmentCategory)
                     .build();
-            
+
             Attachment attachment = attachmentService.uploadAndSave(file, uploadDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(attachment));
         } catch (IOException e) {
             log.error("Error uploading ticket attachment", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Error uploading file: " + e.getMessage()));
+                    .body(buildErrorBody(UPLOAD_ERROR_PREFIX + e.getMessage()));
         } catch (Exception e) {
             log.error("Error uploading ticket attachment", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
+                    .body(buildErrorBody(e.getMessage()));
         }
     }
 
-    /**
-     * Upload de arquivo para uma atividade (nota fiscal do prestador)
-     * POST /api/v1/attachments/activity/{activityId}/upload
-     */
     @PostMapping("/activity/{activityId}/upload")
-    public ResponseEntity<?> uploadActivityAttachment(
+    public ResponseEntity<Object> uploadActivityAttachment(
             @PathVariable UUID activityId,
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "category", defaultValue = "invoice") String category,
@@ -81,24 +84,21 @@ public class AttachmentController {
         try {
             if (activityId == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "Activity ID is required"));
+                        .body(buildErrorBody(ACTIVITY_ID_REQUIRED_MESSAGE));
             }
-            
+
             var activity = activityInstanceRepository.findById(activityId)
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Activity not found with ID: " + activityId));
-            
-            // Extrair usuário do authentication - tenta UUID primeiro, depois email
-            var currentUser = extractUserFromAuthentication(authentication);
-            
-            // Obter Ticket via Activity
+                    .orElseThrow(() -> new IllegalArgumentException("Activity not found with ID: " + activityId));
+
+            User currentUser = extractUserFromAuthentication(authentication);
+
             var activityDefinition = activity.getActivity();
             if (activityDefinition == null || activityDefinition.getTicket() == null) {
-                throw new IllegalArgumentException("Activity does not have associated ticket");
+                throw new IllegalArgumentException(ACTIVITY_WITHOUT_TICKET_MESSAGE);
             }
-            
+
             AttachmentCategory attachmentCategory = AttachmentCategory.fromCode(category);
-            
+
             AttachmentUploadDTO uploadDTO = AttachmentUploadDTO.builder()
                     .condominium(activityDefinition.getCondominium())
                     .activity(activity)
@@ -106,29 +106,29 @@ public class AttachmentController {
                     .uploadedBy(currentUser)
                     .category(attachmentCategory)
                     .build();
-            
+
             Attachment attachment = attachmentService.uploadAndSave(file, uploadDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(attachment));
         } catch (IOException e) {
             log.error("Error uploading activity attachment", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Error uploading file: " + e.getMessage()));
+                    .body(buildErrorBody(UPLOAD_ERROR_PREFIX + e.getMessage()));
         } catch (Exception e) {
             log.error("Error uploading activity attachment", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
+                    .body(buildErrorBody(e.getMessage()));
         }
     }
 
     @GetMapping("/{attachmentId}/presigned-url")
-    public ResponseEntity<?> getPresignedUrl(@PathVariable UUID attachmentId) {
+    public ResponseEntity<Map<String, String>> getPresignedUrl(@PathVariable UUID attachmentId) {
         try {
             String presignedUrl = attachmentService.generatePresignedUrl(attachmentId);
-            return ResponseEntity.ok(Map.of("url", presignedUrl));
+            return ResponseEntity.ok(Map.of(URL_RESPONSE_KEY, presignedUrl));
         } catch (Exception e) {
             log.error("Error generating presigned URL", e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
+                    .body(buildErrorBody(e.getMessage()));
         }
     }
 
@@ -166,32 +166,41 @@ public class AttachmentController {
     }
 
     @DeleteMapping("/{attachmentId}")
-    public ResponseEntity<?> deleteAttachment(@PathVariable UUID attachmentId) {
+    public ResponseEntity<Object> deleteAttachment(@PathVariable UUID attachmentId) {
         try {
             attachmentService.deleteAttachment(attachmentId);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             log.error("Error deleting attachment", e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
+                    .body(buildErrorBody(e.getMessage()));
         }
     }
 
-    // ============ Helper Methods ============
-
-    private com.api.sindigo.core.user.entities.User extractUserFromAuthentication(Authentication authentication) {
+    private User extractUserFromAuthentication(Authentication authentication) {
         String identifier = authentication.getName();
-        
-        // Tenta primeiro como UUID
-        try {
-            UUID userId = UUID.fromString(identifier);
-            return userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
-        } catch (IllegalArgumentException e) {
-            // Não é UUID, tenta como email
-            return userRepository.findByEmail(identifier)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + identifier));
+
+        Optional<UUID> userId = parseUuid(identifier);
+
+        if (userId.isPresent()) {
+            return userRepository.findById(userId.get())
+                    .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId.get()));
         }
+
+        return userRepository.findByEmail(identifier)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + identifier));
+    }
+
+    private Optional<UUID> parseUuid(String identifier) {
+        try {
+            return Optional.of(UUID.fromString(identifier));
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
+    private Map<String, String> buildErrorBody(String message) {
+        return Map.of(ERROR_RESPONSE_KEY, message != null ? message : UNEXPECTED_ERROR_MESSAGE);
     }
 
     private AttachmentResponseDTO convertToDTO(Attachment attachment) {
@@ -207,4 +216,3 @@ public class AttachmentController {
                 .build();
     }
 }
-

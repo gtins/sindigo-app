@@ -7,9 +7,9 @@ import com.api.sindigo.core.activity.entities.Activity;
 import com.api.sindigo.core.activity.entities.ActivityOrigin;
 import com.api.sindigo.core.activity.entities.ActivityStatus;
 import com.api.sindigo.core.activity.validator.ActivityValidator;
+import com.api.sindigo.core.auth.security.SecurityContextHelper;
 import com.api.sindigo.core.condominium.CondominiumRepository;
 import com.api.sindigo.core.condominium.entities.Condominium;
-import com.api.sindigo.core.auth.security.SecurityContextHelper;
 import com.api.sindigo.core.provider.ProviderRepository;
 import com.api.sindigo.core.provider.entities.Provider;
 import com.api.sindigo.core.ticket.TicketRepository;
@@ -21,12 +21,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ActivityService {
+
+    private static final String CONDOMINIUM_ACCESS_ERROR_MESSAGE =
+            "Condominium not found or you don't have access";
+
+    private static final String AUTHENTICATED_USER_NOT_FOUND_MESSAGE =
+            "Usuário autenticado não encontrado";
+
+    private static final String TICKET_NOT_FOUND_MESSAGE = "Ticket not found";
+    private static final String PROVIDER_NOT_FOUND_MESSAGE = "Provider not found";
+    private static final String ACTIVITY_NOT_FOUND_MESSAGE = "Activity not found";
+    private static final DateTimeFormatter CLOSING_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
     private final ActivityRepository activityRepository;
     private final CondominiumRepository condominiumRepository;
@@ -42,36 +55,33 @@ public class ActivityService {
 
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        // Verifica se o condomínio pertence ao usuário autenticado
         Condominium condominium = condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
         User creator = userRepository.findById(authenticatedUserId)
-                .orElseThrow(() -> new IllegalStateException("Usuário autenticado não encontrado"));
+                .orElseThrow(() -> new IllegalStateException(AUTHENTICATED_USER_NOT_FOUND_MESSAGE));
 
         Activity activity = new Activity();
         activity.setTitle(dto.getTitle());
         activity.setDescription(dto.getDescription());
         activity.setType(dto.getType());
         activity.setOrigin(dto.getOrigin() != null ? dto.getOrigin() : ActivityOrigin.MANUAL);
-        activity.setStatus(ActivityStatus.PENDING);  // Inicializar com status PENDING
+        activity.setStatus(ActivityStatus.PENDING);
         activity.setStartDate(dto.getStartDate());
         activity.setEndDate(dto.getEndDate());
         activity.setCondominium(condominium);
         activity.setCreatedBy(creator);
 
-        // Vincular ticket se fornecido
         if (dto.getTicketId() != null) {
             Ticket ticket = ticketRepository.findByIdAndCondominiumId(dto.getTicketId(), condominiumId)
-                    .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+                    .orElseThrow(() -> new IllegalArgumentException(TICKET_NOT_FOUND_MESSAGE));
             activity.setTicket(ticket);
             activity.setOrigin(ActivityOrigin.CHAMADO);
         }
 
-        // Vincular prestador se fornecido
         if (dto.getProviderId() != null) {
             Provider provider = providerRepository.findByIdAndCondominiumId(dto.getProviderId(), condominiumId)
-                    .orElseThrow(() -> new IllegalArgumentException("Provider not found"));
+                    .orElseThrow(() -> new IllegalArgumentException(PROVIDER_NOT_FOUND_MESSAGE));
             activity.setProvider(provider);
         }
 
@@ -84,12 +94,9 @@ public class ActivityService {
     public List<ActivityResponseDTO> listByCondominium(UUID condominiumId) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        // Verifica se o condomínio pertence ao usuário autenticado (owner ou member)
-        // Moradores podem CONSULTAR (ler) atividades, mas não criar
         condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
-        // Retorna TODAS as atividades do condomínio (moradores consultam tudo)
         return activityRepository.findByCondominiumId(condominiumId)
                 .stream()
                 .map(ActivityDtoMapper::toResponseDTO)
@@ -100,22 +107,27 @@ public class ActivityService {
     public ActivityResponseDTO closeActivity(UUID condominiumId, UUID activityId, ActivityCloseDTO dto) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        // Verifica se o condomínio pertence ao usuário autenticado
         condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
         Activity activity = activityRepository.findByIdAndCondominiumId(activityId, condominiumId)
-                .orElseThrow(() -> new IllegalArgumentException("Activity not found"));
+                .orElseThrow(() -> new IllegalArgumentException(ACTIVITY_NOT_FOUND_MESSAGE));
 
         activity.setStatus(dto.getStatus());
         activity.setClosedAt(LocalDateTime.now());
 
-        // Se houver notas de encerramento, adicionar ao histórico
         if (dto.getClosingNotes() != null && !dto.getClosingNotes().isBlank()) {
             String existingDescription = activity.getDescription() != null ? activity.getDescription() : "";
-            String timestamp = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
-            activity.setDescription(existingDescription + (existingDescription.isEmpty() ? "" : "\n\n") + 
-                                   "[Encerrada em " + timestamp + "] " + dto.getClosingNotes());
+            String timestamp = LocalDateTime.now().format(CLOSING_DATE_FORMATTER);
+
+            activity.setDescription(
+                    existingDescription
+                            + (existingDescription.isEmpty() ? "" : "\n\n")
+                            + "[Encerrada em "
+                            + timestamp
+                            + "] "
+                            + dto.getClosingNotes()
+            );
         }
 
         Activity closedActivity = activityRepository.save(activity);

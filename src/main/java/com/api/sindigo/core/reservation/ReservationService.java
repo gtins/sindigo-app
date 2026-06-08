@@ -27,6 +27,22 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ReservationService {
 
+    private static final String CONDOMINIUM_ACCESS_ERROR_MESSAGE =
+            "Condominium not found or you don't have access";
+
+    private static final String AUTHENTICATED_USER_NOT_FOUND_MESSAGE =
+            "Usuário autenticado não encontrado";
+
+    private static final String RESERVATION_NOT_FOUND_MESSAGE = "Reservation not found";
+    private static final String ONLY_PENDING_RESERVATIONS_CAN_BE_APPROVED_MESSAGE =
+            "Only PENDING reservations can be approved";
+
+    private static final String CONDOMINIUM_ID_KEY = "condominiumId";
+    private static final String AREA_KEY = "area";
+    private static final String DATE_KEY = "date";
+    private static final String AVAILABLE_KEY = "available";
+    private static final String CONFLICTS_FOUND_KEY = "conflictsFound";
+
     private final ReservationRepository reservationRepository;
     private final CondominiumRepository condominiumRepository;
     private final ReservationDtoMapper reservationDtoMapper;
@@ -40,12 +56,11 @@ public class ReservationService {
 
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        // Verifica se o condomínio pertence ao usuário autenticado (owner ou member)
         Condominium condominium = condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
         User requester = userRepository.findById(authenticatedUserId)
-                .orElseThrow(() -> new IllegalStateException("Usuário autenticado não encontrado"));
+                .orElseThrow(() -> new IllegalStateException(AUTHENTICATED_USER_NOT_FOUND_MESSAGE));
 
         List<Reservation> conflicts = reservationRepository.findConflictingReservations(
                 condominiumId,
@@ -72,14 +87,16 @@ public class ReservationService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ReservationResponseDTO> listByCondominiumAndStatus(UUID condominiumId, ReservationStatus status, Pageable pageable) {
+    public Page<ReservationResponseDTO> listByCondominiumAndStatus(
+            UUID condominiumId,
+            ReservationStatus status,
+            Pageable pageable
+    ) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
         Condominium condominium = condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
-        // Se o usuário é owner (síndico), retorna TODAS as reservas
-        // Se não for owner, retorna apenas as SUAS reservas
         boolean isOwner = condominium.getOwner().getId().equals(authenticatedUserId);
 
         Page<Reservation> page;
@@ -97,6 +114,7 @@ public class ReservationService {
                     pageable
             );
         }
+
         return page.map(reservationDtoMapper::toResponseDTO);
     }
 
@@ -104,12 +122,9 @@ public class ReservationService {
     public Page<ReservationResponseDTO> listByCondominium(UUID condominiumId, Pageable pageable) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        // Verifica se o condomínio pertence ao usuário autenticado (owner ou member)
         Condominium condominium = condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
-        // Se o usuário é owner (síndico), retorna TODAS as reservas
-        // Se não for owner, retorna apenas as SUAS reservas
         boolean isOwner = condominium.getOwner().getId().equals(authenticatedUserId);
 
         Page<Reservation> page;
@@ -125,6 +140,7 @@ public class ReservationService {
                     pageable
             );
         }
+
         return page.map(reservationDtoMapper::toResponseDTO);
     }
 
@@ -133,7 +149,7 @@ public class ReservationService {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
         condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
@@ -146,26 +162,30 @@ public class ReservationService {
         );
 
         return Map.of(
-                "condominiumId", condominiumId,
-                "area", area,
-                "date", date,
-                "available", conflicts.isEmpty(),
-                "conflictsFound", conflicts.size()
+                CONDOMINIUM_ID_KEY, condominiumId,
+                AREA_KEY, area,
+                DATE_KEY, date,
+                AVAILABLE_KEY, conflicts.isEmpty(),
+                CONFLICTS_FOUND_KEY, conflicts.size()
         );
     }
 
     @Transactional
-    public ReservationResponseDTO approveReservation(UUID condominiumId, UUID reservationId, ReservationApprovalDTO dto) {
+    public ReservationResponseDTO approveReservation(
+            UUID condominiumId,
+            UUID reservationId,
+            ReservationApprovalDTO dto
+    ) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
         condominiumRepository.findByIdAndOwnerId(condominiumId, authenticatedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
 
         Reservation reservation = reservationRepository.findByIdAndCondominiumId(reservationId, condominiumId)
-                .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+                .orElseThrow(() -> new IllegalArgumentException(RESERVATION_NOT_FOUND_MESSAGE));
 
         if (!reservation.getStatus().equals(ReservationStatus.PENDING)) {
-            throw new IllegalStateException("Only PENDING reservations can be approved");
+            throw new IllegalStateException(ONLY_PENDING_RESERVATIONS_CAN_BE_APPROVED_MESSAGE);
         }
 
         reservation.setStatus(dto.getStatus());
