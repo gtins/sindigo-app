@@ -9,6 +9,10 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   test-and-sonar:
     name: Test, coverage and SonarCloud
@@ -43,6 +47,7 @@ jobs:
 
       - name: Check JaCoCo report
         run: |
+          echo "Checking JaCoCo report..."
           ls -la target/site/jacoco
           test -f target/site/jacoco/jacoco.xml
 
