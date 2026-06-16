@@ -3,6 +3,7 @@ package com.api.sindigo.core.condominium;
 import com.api.sindigo.core.auth.security.SecurityContextHelper;
 import com.api.sindigo.core.condominium.dto.CondominiumCreateDTO;
 import com.api.sindigo.core.condominium.dto.CondominiumResponseDTO;
+import com.api.sindigo.core.condominium.dto.CondominiumUpdateDTO;
 import com.api.sindigo.core.condominium.entities.Condominium;
 import com.api.sindigo.core.condominium.validator.CondominiumValidator;
 import com.api.sindigo.core.membership.MembershipService;
@@ -86,6 +87,32 @@ public class CondominiumService {
 
         log.info("✓ Access Granted to condominium {}", id);
         return condominiumDtoMapper.toResponse(condominium);
+    }
+
+    @Transactional
+    public CondominiumResponseDTO updateCondominium(UUID id, CondominiumUpdateDTO dto) {
+        UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
+
+        // Buscar condomínio
+        Condominium condominium = condominiumRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Condominium not found"));
+
+        // Verificar se o usuário autenticado é o dono
+        if (!condominium.getOwner().getId().equals(authenticatedUserId)) {
+            log.warn("X Access Denied: User {} trying to update condominium {}", authenticatedUserId, id);
+            throw new BusinessRuleException("Only the owner can edit this condominium");
+        }
+
+        // Atualizar os dados
+        condominium.setName(dto.getName());
+        condominium.setAddress(dto.getAddress());
+        condominium.setUnidades(dto.getUnidades());
+        condominium.setActive(dto.getActive());
+
+        Condominium updatedCondominium = condominiumRepository.save(condominium);
+
+        log.info("✓ Condominium {} updated successfully", id);
+        return condominiumDtoMapper.toResponse(updatedCondominium);
     }
 }
 

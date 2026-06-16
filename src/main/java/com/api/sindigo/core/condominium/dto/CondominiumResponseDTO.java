@@ -19,6 +19,7 @@ public class CondominiumResponseDTO {
     private String name;
     private String address;
     private Integer unidades;
+    private Boolean active;
     private LocalDate createdAt;
 }
 

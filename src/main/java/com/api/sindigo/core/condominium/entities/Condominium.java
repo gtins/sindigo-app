@@ -43,6 +43,9 @@ public class Condominium {
     @UpdateTimestamp
     private LocalDate updatedAt;
 
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private Boolean active = true;
+
     @OneToMany(mappedBy = "condominium", cascade = CascadeType.ALL)
     private List<Activity> activities = new ArrayList<>();
 

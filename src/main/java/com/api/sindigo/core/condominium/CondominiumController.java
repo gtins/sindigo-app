@@ -2,6 +2,7 @@ package com.api.sindigo.core.condominium;
 
 import com.api.sindigo.core.condominium.dto.CondominiumCreateDTO;
 import com.api.sindigo.core.condominium.dto.CondominiumResponseDTO;
+import com.api.sindigo.core.condominium.dto.CondominiumUpdateDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +39,14 @@ public class CondominiumController {
     @GetMapping("/{id}")
     public ResponseEntity<CondominiumResponseDTO> getById(@PathVariable UUID id) {
         CondominiumResponseDTO response = condominiumService.getById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    // UPDATE
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SINDICO')")
+    public ResponseEntity<CondominiumResponseDTO> update(@PathVariable UUID id, @Valid @RequestBody CondominiumUpdateDTO dto) {
+        CondominiumResponseDTO response = condominiumService.updateCondominium(id, dto);
         return ResponseEntity.ok(response);
     }
 }
