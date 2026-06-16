@@ -2,6 +2,7 @@ package com.api.sindigo.core.condominium;
 
 import com.api.sindigo.core.condominium.dto.CondominiumCreateDTO;
 import com.api.sindigo.core.condominium.dto.CondominiumResponseDTO;
+import com.api.sindigo.core.condominium.dto.CondominiumUpdateDTO;
 import com.api.sindigo.core.condominium.entities.Condominium;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,16 @@ public class CondominiumDtoMapper {
                 .name(dto.getName())
                 .address(dto.getAddress())
                 .unidades(dto.getUnidades())
+                .active(true)
+                .build();
+    }
+
+    public Condominium toDomain(CondominiumUpdateDTO dto) {
+        return Condominium.builder()
+                .name(dto.getName())
+                .address(dto.getAddress())
+                .unidades(dto.getUnidades())
+                .active(dto.getActive())
                 .build();
     }
 
@@ -22,6 +33,7 @@ public class CondominiumDtoMapper {
                 .name(condominium.getName())
                 .address(condominium.getAddress())
                 .unidades(condominium.getUnidades())
+                .active(condominium.getActive())
                 .createdAt(condominium.getCreatedAt())
                 .build();
     }

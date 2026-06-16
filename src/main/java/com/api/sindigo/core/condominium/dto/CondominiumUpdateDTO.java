@@ -1,25 +1,30 @@
 package com.api.sindigo.core.condominium.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.time.LocalDate;
-import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CondominiumResponseDTO {
+public class CondominiumUpdateDTO {
 
-    private UUID id;
+    @NotBlank(message = "Name is required")
     private String name;
+
+    @NotBlank(message = "Address is required")
     private String address;
+
+    @NotNull(message = "Unidades são obrigatórias")
     private Integer unidades;
+
+    @NotNull(message = "Active status is required")
     private Boolean active;
-    private LocalDate createdAt;
 }
 
