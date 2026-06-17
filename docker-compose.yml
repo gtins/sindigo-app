@@ -31,21 +31,60 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
       APP_CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173,http://localhost:4200,http://localhost:8080,http://18.189.167.149,http://sindigo.site,http://www.sindigo.site,https://sindigo.site,https://www.sindigo.site"
+
       APP_JWT_SECRET: ${APP_JWT_SECRET}
       APP_ADMIN_SECRET_KEY: ${APP_ADMIN_SECRET_KEY}
+
       AWS_S3_REGION: ${AWS_S3_REGION}
       AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,metrics,prometheus
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: never
+      MANAGEMENT_METRICS_TAGS_APPLICATION: sindigo
+      MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED: "true"
 
     ports:
       - "8080:8080"
     networks:
       - sindigo-network
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sindigo-prometheus
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - sindigo-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sindigo-grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3001:3000"
+    networks:
+      - sindigo-network
+
 volumes:
   sindigo_postgres_data:
+  grafana_data:
 
 networks:
   sindigo-network:
