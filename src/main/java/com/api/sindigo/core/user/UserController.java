@@ -31,7 +31,7 @@ public class UserController {
     private static final String USER_NOT_AUTHENTICATED = "Usuário não autenticado";
     private static final String NOT_AUTHENTICATED = "Não autenticado";
     private static final String ONLY_ADMIN_CAN_CHANGE_ROLES = "Apenas ADMIN pode alterar roles";
-    private static final String ONLY_ADMIN_AND_SINDICO_CAN_LIST_USERS = "Apenas ADMIN e SINDICO podem listar usuários";
+    private static final String ONLY_ADMIN_CAN_LIST_USERS = "Apenas ADMIN pode listar usuários";
 
     private final UserService userService;
     private final UserRepository userRepository;
@@ -103,8 +103,8 @@ public class UserController {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
-            if (user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.SINDICO) {
-                throw new BusinessRuleException(ONLY_ADMIN_AND_SINDICO_CAN_LIST_USERS);
+            if (user.getRole() != UserRole.ADMIN) {
+                throw new BusinessRuleException(ONLY_ADMIN_CAN_LIST_USERS);
             }
 
             List<UserResponseDTO> response = userRepository.findAll()
