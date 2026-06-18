@@ -127,6 +127,19 @@ class UserControllerTest {
     }
 
     @Test
+    void getCurrentUserReturnsUnauthorizedWhenUserNotFound() {
+        UUID userId = UUID.randomUUID();
+        Authentication authentication = authenticatedUser(userId, "ROLE_ADMIN");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        var result = controller.getCurrentUser(authentication);
+
+        assertEquals(401, result.getStatusCode().value());
+        assertErrorResponse(result.getBody(), 401, "Usuário não encontrado");
+    }
+
+    @Test
     void getCurrentUserReturnsBadRequestForInvalidUuid() {
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 "not-a-uuid",
@@ -221,6 +234,114 @@ class UserControllerTest {
     }
 
     @Test
+    void changeUserRoleReturnsForbiddenWhenAdminNotFound() {
+        UUID adminId = UUID.randomUUID();
+        Authentication authentication = authenticatedUser(adminId, "ROLE_ADMIN");
+
+        ChangeRoleRequestDTO dto = ChangeRoleRequestDTO.builder()
+                .userId(UUID.randomUUID())
+                .role(UserRole.SINDICO)
+                .build();
+
+        when(userRepository.findById(adminId)).thenReturn(Optional.empty());
+
+        var result = controller.changeUserRole(dto, authentication);
+
+        assertEquals(403, result.getStatusCode().value());
+        assertErrorResponse(result.getBody(), 403, "Usuário não encontrado");
+    }
+
+    @Test
+    void changeUserRoleReturnsForbiddenWhenUserServiceThrowsBusinessRuleException() {
+        UUID adminId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        Authentication authentication = authenticatedUser(adminId, "ROLE_ADMIN");
+
+        User admin = User.builder()
+                .id(adminId)
+                .role(UserRole.ADMIN)
+                .build();
+
+        ChangeRoleRequestDTO dto = ChangeRoleRequestDTO.builder()
+                .userId(targetUserId)
+                .role(UserRole.SINDICO)
+                .build();
+
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+        when(userService.changeUserRole(targetUserId, UserRole.SINDICO))
+                .thenThrow(new BusinessRuleException("Usuário alvo não encontrado"));
+
+        var result = controller.changeUserRole(dto, authentication);
+
+        assertEquals(403, result.getStatusCode().value());
+        assertErrorResponse(result.getBody(), 403, "Usuário alvo não encontrado");
+    }
+
+    @Test
+    void changeUserRoleReturnsUnauthorizedWhenUserServiceThrowsValidationException() {
+        UUID adminId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        Authentication authentication = authenticatedUser(adminId, "ROLE_ADMIN");
+
+        User admin = User.builder()
+                .id(adminId)
+                .role(UserRole.ADMIN)
+                .build();
+
+        ChangeRoleRequestDTO dto = ChangeRoleRequestDTO.builder()
+                .userId(targetUserId)
+                .role(UserRole.SINDICO)
+                .build();
+
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+        when(userService.changeUserRole(targetUserId, UserRole.SINDICO))
+                .thenThrow(new ValidationException("Dados inválidos"));
+
+        var result = controller.changeUserRole(dto, authentication);
+
+        assertEquals(401, result.getStatusCode().value());
+        assertErrorResponse(result.getBody(), 401, "Dados inválidos");
+    }
+
+    @Test
+    void getAllUsersReturnsForbiddenWhenAuthenticatedUserNotFound() {
+        UUID adminId = UUID.randomUUID();
+        Authentication authentication = authenticatedUser(adminId, "ROLE_ADMIN");
+
+        when(userRepository.findById(adminId)).thenReturn(Optional.empty());
+
+        var result = controller.getAllUsers(authentication);
+
+        assertEquals(403, result.getStatusCode().value());
+        assertErrorResponse(result.getBody(), 403, "Usuário não encontrado");
+    }
+
+    @Test
+    void getCurrentUserReturnsUnauthorizedWhenNotAuthenticated() {
+        Authentication authentication = null;
+
+        var result = controller.getCurrentUser(authentication);
+
+        assertEquals(401, result.getStatusCode().value());
+        assertErrorResponse(result.getBody(), 401, "Usuário não autenticado");
+    }
+
+    @Test
+    void changeUserRoleReturnsUnauthorizedWhenNotAuthenticated() {
+        Authentication authentication = null;
+
+        ChangeRoleRequestDTO dto = ChangeRoleRequestDTO.builder()
+                .userId(UUID.randomUUID())
+                .role(UserRole.ADMIN)
+                .build();
+
+        var result = controller.changeUserRole(dto, authentication);
+
+        assertEquals(401, result.getStatusCode().value());
+        assertErrorResponse(result.getBody(), 401, "Usuário não autenticado");
+    }
+
+    @Test
     void getAllUsersReturnsUserListForAdmin() {
         UUID adminId = UUID.randomUUID();
         Authentication authentication = authenticatedUser(adminId, "ROLE_ADMIN");
@@ -261,6 +382,52 @@ class UserControllerTest {
 
         assertEquals(401, result.getStatusCode().value());
         assertErrorResponse(result.getBody(), 401, "Não autenticado");
+    }
+
+    @Test
+    void getAllUsersReturnsUserListForSindico() {
+        UUID sindicoId = UUID.randomUUID();
+        Authentication authentication = authenticatedUser(sindicoId, "ROLE_SINDICO");
+
+        User sindico = User.builder()
+                .id(sindicoId)
+                .role(UserRole.SINDICO)
+                .build();
+
+        User otherUser = User.builder()
+                .id(UUID.randomUUID())
+                .name("Maria Souza")
+                .email("maria@example.com")
+                .role(UserRole.MORADOR)
+                .createdAt(LocalDate.of(2026, 6, 1))
+                .build();
+
+        when(userRepository.findById(sindicoId)).thenReturn(Optional.of(sindico));
+        when(userRepository.findAll()).thenReturn(List.of(otherUser));
+
+        var result = controller.getAllUsers(authentication);
+
+        assertEquals(200, result.getStatusCode().value());
+        List<?> body = assertInstanceOf(List.class, result.getBody());
+        assertEquals(1, body.size());
+    }
+
+    @Test
+    void getAllUsersReturnsForbiddenForMorador() {
+        UUID moradorId = UUID.randomUUID();
+        Authentication authentication = authenticatedUser(moradorId, "ROLE_MORADOR");
+
+        User morador = User.builder()
+                .id(moradorId)
+                .role(UserRole.MORADOR)
+                .build();
+
+        when(userRepository.findById(moradorId)).thenReturn(Optional.of(morador));
+
+        var result = controller.getAllUsers(authentication);
+
+        assertEquals(403, result.getStatusCode().value());
+        assertErrorResponse(result.getBody(), 403, "Apenas ADMIN e SINDICO podem listar usuários");
     }
 
     private Authentication authenticatedUser(UUID userId, String role) {
