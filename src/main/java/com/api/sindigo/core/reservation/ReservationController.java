@@ -26,7 +26,6 @@ public class ReservationController {
 
     private final ReservationService reservationService;
 
-    // CREATE - POST /condominiums/{id}/reservations
     @PostMapping("/condominiums/{id}/reservations")
     public ResponseEntity<ReservationResponseDTO> createReservation(
             @PathVariable UUID id,
@@ -36,7 +35,6 @@ public class ReservationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // LIST with optional status filter - GET /condominiums/{id}/reservations
     @GetMapping("/condominiums/{id}/reservations")
     public ResponseEntity<Page<ReservationResponseDTO>> listReservations(
             @PathVariable UUID id,
@@ -54,7 +52,6 @@ public class ReservationController {
         return ResponseEntity.ok(response);
     }
 
-    // APPROVE/REJECT - PATCH /condominiums/{condominiumId}/reservations/{reservationId}
     @PatchMapping("/condominiums/{condominiumId}/reservations/{reservationId}")
     public ResponseEntity<ReservationResponseDTO> approveReservation(
             @PathVariable UUID condominiumId,
@@ -65,7 +62,15 @@ public class ReservationController {
         return ResponseEntity.ok(response);
     }
 
-    // AVAILABILITY - GET /condominiums/{id}/reservations/availability?area=Salão&date=2026-06-01
+    @PatchMapping("/condominiums/{condominiumId}/reservations/{reservationId}/cancel")
+    public ResponseEntity<ReservationResponseDTO> cancelReservation(
+            @PathVariable UUID condominiumId,
+            @PathVariable UUID reservationId
+    ) {
+        ReservationResponseDTO response = reservationService.cancelReservation(condominiumId, reservationId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/condominiums/{id}/reservations/availability")
     public ResponseEntity<Map<String, Object>> checkAvailability(
             @PathVariable UUID id,

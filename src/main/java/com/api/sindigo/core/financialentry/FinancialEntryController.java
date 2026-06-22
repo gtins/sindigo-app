@@ -19,7 +19,6 @@ public class FinancialEntryController {
 
     private final FinancialEntryService financialEntryService;
 
-    // CREATE - POST /condominiums/{id}/financial-entries
     @PostMapping("/condominiums/{id}/financial-entries")
     public ResponseEntity<FinancialEntryResponseDTO> createFinancialEntry(
             @PathVariable UUID id,
@@ -29,7 +28,6 @@ public class FinancialEntryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // LIST - GET /condominiums/{id}/financial-entries
     @GetMapping("/condominiums/{id}/financial-entries")
     public List<FinancialEntryResponseDTO> listFinancialEntries(
             @PathVariable UUID id
@@ -37,7 +35,6 @@ public class FinancialEntryController {
         return financialEntryService.listByCondominium(id);
     }
 
-    // GET BALANCE - GET /condominiums/{id}/balance
     @GetMapping("/condominiums/{id}/balance")
     public ResponseEntity<BalanceResponseDTO> getBalance(
             @PathVariable UUID id

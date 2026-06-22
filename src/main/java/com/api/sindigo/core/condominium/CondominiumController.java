@@ -20,7 +20,6 @@ public class CondominiumController {
 
     private final CondominiumService condominiumService;
 
-    // CREATE
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SINDICO')")
     public ResponseEntity<CondominiumResponseDTO> create(@Valid @RequestBody CondominiumCreateDTO dto) {
@@ -28,21 +27,18 @@ public class CondominiumController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // READ ALL
     @GetMapping
     public ResponseEntity<List<CondominiumResponseDTO>> list() {
         List<CondominiumResponseDTO> response = condominiumService.listCondominiums();
         return ResponseEntity.ok(response);
     }
 
-    // READ BY ID
     @GetMapping("/{id}")
     public ResponseEntity<CondominiumResponseDTO> getById(@PathVariable UUID id) {
         CondominiumResponseDTO response = condominiumService.getById(id);
         return ResponseEntity.ok(response);
     }
 
-    // UPDATE
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SINDICO')")
     public ResponseEntity<CondominiumResponseDTO> update(@PathVariable UUID id, @Valid @RequestBody CondominiumUpdateDTO dto) {

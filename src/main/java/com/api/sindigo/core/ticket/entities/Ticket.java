@@ -28,7 +28,7 @@ public class Ticket {
 
     private String title;
     private String description;
-    private String location;              // "Ap 102", "Área comum", etc
+    private String location;
 
     @Enumerated(EnumType.STRING)
     private TicketStatus status;
@@ -45,29 +45,24 @@ public class Ticket {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    private LocalDateTime closedAt;       // Quando foi fechado
+    private LocalDateTime closedAt;
 
-    // FK: O condomínio ao qual pertence
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "condominium_id", nullable = false)
     private Condominium condominium;
 
-    // FK: Quem abriu o chamado (morador, síndico, etc)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
-    // FK: Quem atendeu/responsável (síndico, gerente, etc)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_to", nullable = true)
     private User assignedTo;
 
-    // Relacionamento: Um ticket pode gerar múltiplas atividades
     @OneToMany(mappedBy = "ticket", cascade = CascadeType.PERSIST)
     private List<Activity> activities = new ArrayList<>();
 
-    // Auditoria adicional opcional
-    private String notes;                  // Notas internas do síndico
-    private String estimatedResolution;    // Data/período estimado
+    private String notes;
+    private String estimatedResolution;
 }
 

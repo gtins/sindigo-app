@@ -54,19 +54,19 @@ public class Attachment {
     private User uploadedBy;
 
     @Column(name = "attachment_category", nullable = false)
-    private String attachmentCategory; // TICKET_EVIDENCE, INVOICE, COMPLETION_PROOF, etc.
+    private String attachmentCategory;
 
     @Column(name = "file_type", nullable = false)
-    private String fileType; // PDF, PNG, JPG, etc.
+    private String fileType;
 
     @Column(name = "original_file_name", nullable = false, length = 500)
     private String originalFileName;
 
     @Column(name = "storage_key", nullable = false, unique = true, length = 500)
-    private String storageKey; // S3 object key: YYYY/MM/UUID-filename
+    private String storageKey;
 
     @Column(name = "mime_type", nullable = false, length = 100)
-    private String mimeType; // application/pdf, image/png, etc.
+    private String mimeType;
 
     @Column(name = "size_bytes", nullable = false)
     private Long sizeBytes;

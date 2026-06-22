@@ -37,6 +37,11 @@ public class ReservationService {
     private static final String ONLY_PENDING_RESERVATIONS_CAN_BE_APPROVED_MESSAGE =
             "Only PENDING reservations can be approved";
 
+    private static final String ONLY_PENDING_OR_CONFIRMED_CAN_BE_CANCELLED =
+            "Only PENDING or CONFIRMED reservations can be cancelled";
+    private static final String RESERVATION_ALREADY_CANCELLED =
+            "This reservation is already cancelled";
+
     private static final String CONDOMINIUM_ID_KEY = "condominiumId";
     private static final String AREA_KEY = "area";
     private static final String DATE_KEY = "date";
@@ -189,6 +194,40 @@ public class ReservationService {
         }
 
         reservation.setStatus(dto.getStatus());
+
+        Reservation saved = reservationRepository.save(reservation);
+
+        return reservationDtoMapper.toResponseDTO(saved);
+    }
+
+    @Transactional
+    public ReservationResponseDTO cancelReservation(UUID condominiumId, UUID reservationId) {
+        UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
+
+        Condominium condominium = condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId)
+                .orElseThrow(() -> new IllegalArgumentException(CONDOMINIUM_ACCESS_ERROR_MESSAGE));
+
+        Reservation reservation = reservationRepository.findByIdAndCondominiumId(reservationId, condominiumId)
+                .orElseThrow(() -> new IllegalArgumentException(RESERVATION_NOT_FOUND_MESSAGE));
+
+        boolean isRequester = reservation.getRequestedBy().getId().equals(authenticatedUserId);
+
+        if (!isRequester) {
+            throw new IllegalArgumentException("Only the person who made the reservation can cancel it");
+        }
+
+        if (reservation.getStatus().equals(ReservationStatus.CANCELLED)) {
+            throw new IllegalStateException(RESERVATION_ALREADY_CANCELLED);
+        }
+
+        if (!reservation.getStatus().equals(ReservationStatus.PENDING) && 
+            !reservation.getStatus().equals(ReservationStatus.CONFIRMED)) {
+            throw new IllegalStateException(ONLY_PENDING_OR_CONFIRMED_CAN_BE_CANCELLED);
+        }
+
+        reservationValidator.validateCancellation(reservation.getStartTime());
+
+        reservation.setStatus(ReservationStatus.CANCELLED);
 
         Reservation saved = reservationRepository.save(reservation);
 

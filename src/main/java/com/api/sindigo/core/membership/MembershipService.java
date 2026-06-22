@@ -42,7 +42,7 @@ public class MembershipService {
                 .build();
 
         Membership saved = membershipRepository.save(membership);
-        log.info("✓ Morador adicionado: {} ao condomínio {}", user.getEmail(), condominium.getName());
+        log.info("Morador adicionado: {} ao condomínio {}", user.getEmail(), condominium.getName());
 
         return MembershipResponseDTO.builder()
                 .id(saved.getId())
@@ -76,7 +76,7 @@ public class MembershipService {
     @Transactional
     public void removeMember(UUID condominiumId, UUID userId) {
         membershipRepository.deleteByCondominiumIdAndUserId(condominiumId, userId);
-        log.info("✓ Morador removido do condomínio");
+        log.info("Morador removido do condomínio");
     }
 
     @Transactional(readOnly = true)

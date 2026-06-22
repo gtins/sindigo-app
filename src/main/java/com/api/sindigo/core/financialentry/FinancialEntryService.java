@@ -33,7 +33,6 @@ public class FinancialEntryService {
 
         UUID userId = securityContextHelper.getAuthenticatedUserId();
 
-        // Validar acesso: usuário deve ser owner ou membro do condomínio
         Condominium condominium = condominiumRepository.findByIdAndUserHasAccess(condominiumId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access to manage financial entries"));
 
@@ -53,7 +52,6 @@ public class FinancialEntryService {
     public List<FinancialEntryResponseDTO> listByCondominium(UUID condominiumId) {
         UUID userId = securityContextHelper.getAuthenticatedUserId();
 
-        // Validar acesso
         condominiumRepository.findByIdAndUserHasAccess(condominiumId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have access"));
 
@@ -67,7 +65,6 @@ public class FinancialEntryService {
     public BalanceResponseDTO getBalance(UUID condominiumId) {
         UUID userId = securityContextHelper.getAuthenticatedUserId();
 
-        // Balance é sensível: apenas owner (síndico) pode acessar
         condominiumRepository.findByIdAndOwnerId(condominiumId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Condominium not found or you don't have permission to view balance"));
 

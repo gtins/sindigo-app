@@ -38,7 +38,7 @@ public class AttachmentService {
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
 
-    private static final long MAX_FILE_SIZE = 10L * 1024 * 1024; // 10MB
+    private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "image/png", "image/jpeg", "image/jpg", "image/gif",
             "application/pdf"
@@ -49,9 +49,6 @@ public class AttachmentService {
     private static final String ERROR_FILE_SIZE = "File size exceeds maximum allowed size of 10MB";
     private static final String ERROR_FILE_TYPE = "File type not allowed. Allowed types: PNG, JPG, JPEG, GIF, PDF";
 
-    /**
-     * Upload arquivo para S3 e salva metadados no banco
-     */
     @Transactional
     public Attachment uploadAndSave(MultipartFile file, AttachmentUploadDTO uploadDTO) throws IOException {
         validateFile(file);
@@ -59,10 +56,8 @@ public class AttachmentService {
         String storageKey = generateStorageKey(file);
         String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
 
-        // 1. Upload para S3
         uploadToS3(file, storageKey, contentType);
 
-        // 2. Criar entidade Attachment
         Attachment attachment = Attachment.builder()
                 .condominium(uploadDTO.getCondominium())
                 .ticket(uploadDTO.getTicket())
@@ -82,10 +77,6 @@ public class AttachmentService {
         return saved;
     }
 
-    /**
-     * Gera URL assinada para visualização/download
-     * SEGURANÇA: Valida se o usuário tem acesso ao condomínio
-     */
     @Transactional(readOnly = true)
     public String generatePresignedUrl(UUID attachmentId) {
         UUID userId = securityContextHelper.getAuthenticatedUserId();
@@ -97,16 +88,11 @@ public class AttachmentService {
             throw new BusinessRuleException("Cannot generate URL for deleted attachment");
         }
 
-        // Validar acesso ao condomínio do attachment
         validateUserHasAccessToAttachment(userId, attachment);
 
         return generatePresignedUrlFromKey(attachment.getStorageKey(), attachment.getMimeType());
     }
 
-    /**
-     * Lista todos os attachments de um ticket
-     * SEGURANÇA: Valida acesso ao condomínio do ticket
-     */
     @Transactional(readOnly = true)
     public List<AttachmentResponseDTO> getTicketAttachments(UUID ticketId) {
         UUID userId = securityContextHelper.getAuthenticatedUserId();
@@ -114,7 +100,6 @@ public class AttachmentService {
         List<Attachment> attachments = attachmentRepository.findByTicketIdAndDeletedAtNull(ticketId);
         
         if (!attachments.isEmpty()) {
-            // Validar acesso ao condomínio usando o primeiro attachment
             validateUserHasAccessToAttachment(userId, attachments.get(0));
         }
         
@@ -123,10 +108,6 @@ public class AttachmentService {
                 .toList();
     }
 
-    /**
-     * Lista todos os attachments de uma atividade
-     * SEGURANÇA: Valida acesso ao condomínio da atividade
-     */
     @Transactional(readOnly = true)
     public List<AttachmentResponseDTO> getActivityAttachments(UUID activityId) {
         UUID userId = securityContextHelper.getAuthenticatedUserId();
@@ -134,7 +115,6 @@ public class AttachmentService {
         List<Attachment> attachments = attachmentRepository.findByActivityIdAndDeletedAtNull(activityId);
         
         if (!attachments.isEmpty()) {
-            // Validar acesso ao condomínio usando o primeiro attachment
             validateUserHasAccessToAttachment(userId, attachments.get(0));
         }
         
@@ -143,10 +123,6 @@ public class AttachmentService {
                 .toList();
     }
 
-    /**
-     * Lista todos os attachments de um prestador
-     * SEGURANÇA: Valida acesso ao condomínio do prestador
-     */
     @Transactional(readOnly = true)
     public List<AttachmentResponseDTO> getServiceProviderAttachments(UUID serviceProviderId) {
         UUID userId = securityContextHelper.getAuthenticatedUserId();
@@ -154,7 +130,6 @@ public class AttachmentService {
         List<Attachment> attachments = attachmentRepository.findByServiceProviderIdAndDeletedAtNull(serviceProviderId);
         
         if (!attachments.isEmpty()) {
-            // Validar acesso ao condomínio usando o primeiro attachment
             validateUserHasAccessToAttachment(userId, attachments.get(0));
         }
         
@@ -163,9 +138,6 @@ public class AttachmentService {
                 .toList();
     }
 
-    /**
-     * Soft delete de um attachment
-     */
     @Transactional
     public void deleteAttachment(UUID attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
@@ -178,12 +150,6 @@ public class AttachmentService {
         }
     }
 
-    // ============ Private Helper Methods ============
-
-    /**
-     * Valida se o usuário autenticado tem acesso ao condomínio do attachment
-     * SEGURANÇA: Previne BOLA (Broken Object Level Authorization)
-     */
     private void validateUserHasAccessToAttachment(UUID userId, Attachment attachment) {
         if (attachment.getCondominium() == null) {
             throw new BusinessRuleException("Attachment does not have an associated condominium");
@@ -252,7 +218,7 @@ public class AttachmentService {
                     .build();
 
             GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                    .signatureDuration(Duration.ofMinutes(15)) // URL válida por 15 minutos
+                    .signatureDuration(Duration.ofMinutes(15))
                     .getObjectRequest(getRequest)
                     .build();
 

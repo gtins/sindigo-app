@@ -11,9 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ActivityCloseDTO {
 
-    @NotNull(message = "Status is required")
-    private ActivityStatus status;  // COMPLETED ou CANCELLED
+    @NotNull(message = "Status é obrigatório")
+    private ActivityStatus status;
 
-    private String closingNotes;    // Notas de encerramento
+    private String closingNotes;
 }
 

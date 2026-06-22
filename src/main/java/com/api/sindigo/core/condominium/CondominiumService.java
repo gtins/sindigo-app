@@ -66,26 +66,22 @@ public class CondominiumService {
         log.info("Condominium ID: {}", id);
         log.info("Authenticated User ID: {}", authenticatedUserId);
 
-        // Buscar condomínio
         Condominium condominium = condominiumRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Condominium not found"));
 
-        // Verificar se é owner
         boolean isOwner = condominium.getOwner().getId().equals(authenticatedUserId);
         log.info("Is Owner: {}", isOwner);
         log.info("Owner ID: {}", condominium.getOwner().getId());
-        
-        // Verificar se é membro
+
         boolean isMember = membershipService.isMemberOf(authenticatedUserId, id);
         log.info("Is Member: {}", isMember);
 
-        // Permitir acesso apenas se for owner ou membro
         if (!isOwner && !isMember) {
-            log.warn("X Access Denied: User {} trying to access condominium {}", authenticatedUserId, id);
+            log.warn("Access Denied: User {} trying to access condominium {}", authenticatedUserId, id);
             throw new BusinessRuleException("You don't have access to this condominium");
         }
 
-        log.info("✓ Access Granted to condominium {}", id);
+        log.info("Access Granted to condominium {}", id);
         return condominiumDtoMapper.toResponse(condominium);
     }
 
@@ -93,17 +89,14 @@ public class CondominiumService {
     public CondominiumResponseDTO updateCondominium(UUID id, CondominiumUpdateDTO dto) {
         UUID authenticatedUserId = securityContextHelper.getAuthenticatedUserId();
 
-        // Buscar condomínio
         Condominium condominium = condominiumRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Condominium not found"));
 
-        // Verificar se o usuário autenticado é o dono
         if (!condominium.getOwner().getId().equals(authenticatedUserId)) {
-            log.warn("X Access Denied: User {} trying to update condominium {}", authenticatedUserId, id);
+            log.warn("Access Denied: User {} trying to update condominium {}", authenticatedUserId, id);
             throw new BusinessRuleException("Only the owner can edit this condominium");
         }
 
-        // Atualizar os dados
         condominium.setName(dto.getName());
         condominium.setAddress(dto.getAddress());
         condominium.setUnidades(dto.getUnidades());
@@ -111,7 +104,7 @@ public class CondominiumService {
 
         Condominium updatedCondominium = condominiumRepository.save(condominium);
 
-        log.info("✓ Condominium {} updated successfully", id);
+        log.info("Condominium {} updated successfully", id);
         return condominiumDtoMapper.toResponse(updatedCondominium);
     }
 }

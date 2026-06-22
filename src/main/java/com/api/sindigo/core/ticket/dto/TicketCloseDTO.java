@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 public class TicketCloseDTO {
 
     @NotNull(message = "Status is required")
-    private TicketStatus status;  // RESOLVIDO, FECHADO, ou CANCELADO
+    private TicketStatus status;
 
-    private String closingNotes;  // Notas de encerramento
+    private String closingNotes;
 }
 

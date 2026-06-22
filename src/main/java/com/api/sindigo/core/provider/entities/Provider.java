@@ -26,7 +26,7 @@ public class Provider {
     private UUID id;
 
     private String name;
-    private String serviceType;           // "Encanador", "Eletricista", etc
+    private String serviceType;
     private String phone;
     private String email;
     private String notes;
@@ -37,12 +37,10 @@ public class Provider {
     @UpdateTimestamp
     private LocalDate updatedAt;
 
-    // FK: A qual condomínio está vinculado
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "condominium_id", nullable = false)
     private Condominium condominium;
 
-    // Relacionamento: Um prestador pode ter executado múltiplas atividades
     @OneToMany(mappedBy = "provider", cascade = CascadeType.PERSIST)
     private List<Activity> activities = new ArrayList<>();
 }
