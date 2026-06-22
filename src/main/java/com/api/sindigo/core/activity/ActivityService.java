@@ -30,14 +30,14 @@ import java.util.UUID;
 public class ActivityService {
 
     private static final String CONDOMINIUM_ACCESS_ERROR_MESSAGE =
-            "Condominium not found or you don't have access";
+            "Condominio não encontrado ou voce não tem acesso!";
 
     private static final String AUTHENTICATED_USER_NOT_FOUND_MESSAGE =
-            "Usuário autenticado não encontrado";
+            "Usuário autenticado não encontrado!";
 
-    private static final String TICKET_NOT_FOUND_MESSAGE = "Ticket not found";
-    private static final String PROVIDER_NOT_FOUND_MESSAGE = "Provider not found";
-    private static final String ACTIVITY_NOT_FOUND_MESSAGE = "Activity not found";
+    private static final String TICKET_NOT_FOUND_MESSAGE = "Chamado não encontrado";
+    private static final String PROVIDER_NOT_FOUND_MESSAGE = "Provedor não encontrado";
+    private static final String ACTIVITY_NOT_FOUND_MESSAGE = "Atividade não encontrada";
     private static final DateTimeFormatter CLOSING_DATE_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 

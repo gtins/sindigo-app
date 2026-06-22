@@ -49,7 +49,7 @@ public class Activity {
     @UpdateTimestamp
     private LocalDate updatedAt;
 
-    private LocalDateTime closedAt;       // Quando foi finalizada
+    private LocalDateTime closedAt;
 
     @ManyToOne
     @JoinColumn(name = "condominium_id", nullable = false)

@@ -23,6 +23,8 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -101,10 +103,13 @@ class ReservationServiceTest {
                 .endTime(validEnd)
                 .build();
 
-        try (MockedStatic<LocalDateTime> mockedDateTime =
-                     mockStatic(LocalDateTime.class, CALLS_REAL_METHODS)) {
+        LocalDateTime mockedNow = TEST_REFERENCE_DATE.minusDays(8);
+        ZonedDateTime mockedZonedNow = mockedNow.atZone(ZoneId.systemDefault());
 
-            mockedDateTime.when(LocalDateTime::now).thenReturn(TEST_REFERENCE_DATE.minusDays(8));
+        try (MockedStatic<ZonedDateTime> mockedZDT = mockStatic(ZonedDateTime.class, CALLS_REAL_METHODS)) {
+            mockedZDT
+                    .when(() -> ZonedDateTime.now(any(ZoneId.class)))
+                    .thenReturn(mockedZonedNow);
 
             when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
             when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId))
@@ -116,6 +121,7 @@ class ReservationServiceTest {
                     dto.getStartTime(),
                     dto.getEndTime()
             )).thenReturn(Collections.emptyList());
+
             when(reservationRepository.save(any(Reservation.class))).thenAnswer(invocation -> {
                 Reservation reservation = invocation.getArgument(0);
                 reservation.setId(UUID.randomUUID());
@@ -150,10 +156,13 @@ class ReservationServiceTest {
                 .endTime(validEnd)
                 .build();
 
-        try (MockedStatic<LocalDateTime> mockedDateTime =
-                     mockStatic(LocalDateTime.class, CALLS_REAL_METHODS)) {
+        LocalDateTime mockedNow = TEST_REFERENCE_DATE.minusDays(8);
+        ZonedDateTime mockedZonedNow = mockedNow.atZone(ZoneId.systemDefault());
 
-            mockedDateTime.when(LocalDateTime::now).thenReturn(TEST_REFERENCE_DATE.minusDays(8));
+        try (MockedStatic<ZonedDateTime> mockedZDT = mockStatic(ZonedDateTime.class, CALLS_REAL_METHODS)) {
+            mockedZDT
+                    .when(() -> ZonedDateTime.now(any(ZoneId.class)))
+                    .thenReturn(mockedZonedNow);
 
             when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
             when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId))
@@ -172,6 +181,7 @@ class ReservationServiceTest {
     @Test
     void listByCondominiumForOwnerReturnsAllReservations() {
         Pageable pageable = PageRequest.of(0, 10);
+
         Reservation reservation = Reservation.builder()
                 .id(UUID.randomUUID())
                 .condominium(condominium)
@@ -197,6 +207,7 @@ class ReservationServiceTest {
         condominium.setOwner(User.builder().id(UUID.randomUUID()).build());
 
         Pageable pageable = PageRequest.of(0, 10);
+
         Reservation reservation = Reservation.builder()
                 .id(UUID.randomUUID())
                 .condominium(condominium)
@@ -242,6 +253,7 @@ class ReservationServiceTest {
     @Test
     void approveReservationConfirmsPendingReservation() {
         UUID reservationId = UUID.randomUUID();
+
         Reservation reservation = Reservation.builder()
                 .id(reservationId)
                 .condominium(condominium)
@@ -267,6 +279,7 @@ class ReservationServiceTest {
     @Test
     void approveReservationRejectsNonPendingReservations() {
         UUID reservationId = UUID.randomUUID();
+
         Reservation reservation = Reservation.builder()
                 .id(reservationId)
                 .condominium(condominium)
@@ -285,5 +298,195 @@ class ReservationServiceTest {
                 IllegalStateException.class,
                 () -> reservationService.approveReservation(condominiumId, reservationId, approvalDTO)
         );
+    }
+
+    @Test
+    void cancelReservationCancelsPendingReservation() {
+        UUID reservationId = UUID.randomUUID();
+        LocalDateTime reservationStart = TEST_REFERENCE_DATE.plusHours(25);
+        ZonedDateTime mockedZonedNow = TEST_REFERENCE_DATE.atZone(ZoneId.systemDefault());
+
+        Reservation reservation = Reservation.builder()
+                .id(reservationId)
+                .condominium(condominium)
+                .requestedBy(requester)
+                .status(ReservationStatus.PENDING)
+                .startTime(reservationStart)
+                .endTime(reservationStart.plusHours(4))
+                .build();
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId))
+                .thenReturn(Optional.of(condominium));
+        when(reservationRepository.findByIdAndCondominiumId(reservationId, condominiumId))
+                .thenReturn(Optional.of(reservation));
+        when(reservationRepository.save(any(Reservation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        try (MockedStatic<LocalDateTime> mockedLDT = mockStatic(LocalDateTime.class, CALLS_REAL_METHODS);
+             MockedStatic<ZonedDateTime> mockedZDT = mockStatic(ZonedDateTime.class, CALLS_REAL_METHODS)) {
+
+            mockedLDT.when(LocalDateTime::now).thenReturn(TEST_REFERENCE_DATE);
+            mockedZDT
+                    .when(() -> ZonedDateTime.now(any(ZoneId.class)))
+                    .thenReturn(mockedZonedNow);
+
+            ReservationResponseDTO response = reservationService.cancelReservation(condominiumId, reservationId);
+
+            assertEquals(ReservationStatus.CANCELLED, response.getStatus());
+        }
+    }
+
+    @Test
+    void cancelReservationRejectsAlreadyCancelledReservation() {
+        UUID reservationId = UUID.randomUUID();
+        LocalDateTime reservationStart = TEST_REFERENCE_DATE.plusHours(25);
+
+        Reservation reservation = Reservation.builder()
+                .id(reservationId)
+                .condominium(condominium)
+                .requestedBy(requester)
+                .status(ReservationStatus.CANCELLED)
+                .startTime(reservationStart)
+                .build();
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId))
+                .thenReturn(Optional.of(condominium));
+        when(reservationRepository.findByIdAndCondominiumId(reservationId, condominiumId))
+                .thenReturn(Optional.of(reservation));
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> reservationService.cancelReservation(condominiumId, reservationId)
+        );
+    }
+
+    @Test
+    void cancelReservationRejectsInsufficientAdvanceNotice() {
+        UUID reservationId = UUID.randomUUID();
+
+        LocalDateTime mockedNow = LocalDateTime.of(2026, Month.JUNE, 10, 10, 0, 0);
+        ZonedDateTime mockedZonedNow = mockedNow.atZone(ZoneId.systemDefault());
+        LocalDateTime reservationStart = mockedNow.plusHours(12);
+
+        Reservation reservation = Reservation.builder()
+                .id(reservationId)
+                .condominium(condominium)
+                .requestedBy(requester)
+                .status(ReservationStatus.PENDING)
+                .startTime(reservationStart)
+                .build();
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId))
+                .thenReturn(Optional.of(condominium));
+        when(reservationRepository.findByIdAndCondominiumId(reservationId, condominiumId))
+                .thenReturn(Optional.of(reservation));
+
+        try (MockedStatic<LocalDateTime> mockedLDT = mockStatic(LocalDateTime.class, CALLS_REAL_METHODS);
+             MockedStatic<ZonedDateTime> mockedZDT = mockStatic(ZonedDateTime.class, CALLS_REAL_METHODS)) {
+
+            mockedLDT.when(LocalDateTime::now).thenReturn(mockedNow);
+            mockedZDT
+                    .when(() -> ZonedDateTime.now(any(ZoneId.class)))
+                    .thenReturn(mockedZonedNow);
+
+            assertThrows(
+                    ValidationException.class,
+                    () -> reservationService.cancelReservation(condominiumId, reservationId)
+            );
+        }
+    }
+
+    @Test
+    void cancelReservationRejectsNonRequester() {
+        UUID reservationId = UUID.randomUUID();
+        UUID anotherUserId = UUID.randomUUID();
+
+        LocalDateTime reservationStart = TEST_REFERENCE_DATE.plusHours(25);
+
+        Reservation reservation = Reservation.builder()
+                .id(reservationId)
+                .condominium(condominium)
+                .requestedBy(requester)
+                .status(ReservationStatus.PENDING)
+                .startTime(reservationStart)
+                .build();
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(anotherUserId);
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, anotherUserId))
+                .thenReturn(Optional.of(condominium));
+        when(reservationRepository.findByIdAndCondominiumId(reservationId, condominiumId))
+                .thenReturn(Optional.of(reservation));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> reservationService.cancelReservation(condominiumId, reservationId)
+        );
+    }
+
+    @Test
+    void cancelReservationRejectsWhenCondominiumNotFound() {
+        UUID reservationId = UUID.randomUUID();
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> reservationService.cancelReservation(condominiumId, reservationId)
+        );
+    }
+
+    @Test
+    void cancelReservationRejectsWhenReservationNotFound() {
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId))
+                .thenReturn(Optional.of(condominium));
+        when(reservationRepository.findByIdAndCondominiumId(any(), eq(condominiumId)))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> reservationService.cancelReservation(condominiumId, UUID.randomUUID())
+        );
+    }
+
+    @Test
+    void cancelReservationRejectsConfirmedReservationWhenTooClose() {
+        UUID reservationId = UUID.randomUUID();
+
+        LocalDateTime mockedNow = LocalDateTime.of(2026, Month.JUNE, 10, 10, 0, 0);
+        ZonedDateTime mockedZonedNow = mockedNow.atZone(ZoneId.systemDefault());
+        LocalDateTime reservationStart = mockedNow.plusHours(12);
+
+        Reservation reservation = Reservation.builder()
+                .id(reservationId)
+                .condominium(condominium)
+                .requestedBy(requester)
+                .status(ReservationStatus.CONFIRMED)
+                .startTime(reservationStart)
+                .build();
+
+        when(securityContextHelper.getAuthenticatedUserId()).thenReturn(authenticatedUserId);
+        when(condominiumRepository.findByIdAndUserHasAccess(condominiumId, authenticatedUserId))
+                .thenReturn(Optional.of(condominium));
+        when(reservationRepository.findByIdAndCondominiumId(reservationId, condominiumId))
+                .thenReturn(Optional.of(reservation));
+
+        try (MockedStatic<LocalDateTime> mockedLDT = mockStatic(LocalDateTime.class, CALLS_REAL_METHODS);
+             MockedStatic<ZonedDateTime> mockedZDT = mockStatic(ZonedDateTime.class, CALLS_REAL_METHODS)) {
+
+            mockedLDT.when(LocalDateTime::now).thenReturn(mockedNow);
+            mockedZDT
+                    .when(() -> ZonedDateTime.now(any(ZoneId.class)))
+                    .thenReturn(mockedZonedNow);
+
+            assertThrows(
+                    ValidationException.class,
+                    () -> reservationService.cancelReservation(condominiumId, reservationId)
+            );
+        }
     }
 }

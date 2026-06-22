@@ -12,11 +12,6 @@ public class JwtService {
 
     private final JwtTokenProvider jwtTokenProvider;
 
-    /**
-     * Valida o token e retorna informações sobre sua validade
-     * @param token Token JWT
-     * @return Informações sobre a validação
-     */
     public JwtValidationResponse validateToken(String token) {
         try {
             if (!jwtTokenProvider.validateToken(token)) {
@@ -32,9 +27,6 @@ public class JwtService {
         }
     }
 
-    /**
-     * DTO para resposta de validação de token
-     */
     @Getter
     public static class JwtValidationResponse {
         private final boolean valid;

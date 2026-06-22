@@ -7,10 +7,13 @@ import org.mockito.MockedStatic;
 
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mockStatic;
 
@@ -58,10 +61,10 @@ class ReservationValidatorTest {
     @Test
     void validateReservationCreationRejectsInsufficientAdvanceNotice() {
         LocalDateTime mockedNow = LocalDateTime.of(2026, Month.JUNE, 10, 10, 0, 0);
+        ZonedDateTime mockedZonedNow = mockedNow.atZone(ZoneId.systemDefault());
 
         LocalDateTime invalidStart = mockedNow
-                .plusDays(3)
-                .withHour(18)
+                .plusHours(12)
                 .withMinute(0)
                 .withSecond(0)
                 .withNano(0);
@@ -70,17 +73,17 @@ class ReservationValidatorTest {
 
         ReservationCreateDTO dto = buildReservationCreateDTO(invalidStart, invalidEnd);
 
-        try (MockedStatic<LocalDateTime> mockedDateTime =
-                     mockStatic(LocalDateTime.class, CALLS_REAL_METHODS)) {
-
-            mockedDateTime.when(LocalDateTime::now).thenReturn(mockedNow);
+        try (MockedStatic<ZonedDateTime> mockedZDT = mockStatic(ZonedDateTime.class, CALLS_REAL_METHODS)) {
+            mockedZDT
+                    .when(() -> ZonedDateTime.now(any(ZoneId.class)))
+                    .thenReturn(mockedZonedNow);
 
             ValidationException exception = assertThrows(
                     ValidationException.class,
                     () -> validator.validateReservationCreation(dto)
             );
 
-            assertEquals("As reservas devem ser feitas com no mínimo 7 dias de antecedência", exception.getMessage());
+            assertEquals("As reservas devem ser feitas com no mínimo 24 horas de antecedência", exception.getMessage());
         }
     }
 
@@ -92,7 +95,7 @@ class ReservationValidatorTest {
                 .withSecond(0)
                 .withNano(0);
 
-        LocalDateTime excessiveEnd = validStart.plusHours(8);
+        LocalDateTime excessiveEnd = validStart.plusHours(26);
 
         ReservationCreateDTO dto = buildReservationCreateDTO(validStart, excessiveEnd);
 
@@ -101,7 +104,7 @@ class ReservationValidatorTest {
                 () -> validator.validateReservationCreation(dto)
         );
 
-        assertEquals("O período máximo permitido para uma reserva é de 6 horas", exception.getMessage());
+        assertEquals("O período máximo permitido para uma reserva é de 24 horas", exception.getMessage());
     }
 
     @Test
@@ -112,6 +115,108 @@ class ReservationValidatorTest {
         );
 
         assertEquals("Já existe uma reserva para esta área no período solicitado", exception.getMessage());
+    }
+
+    @Test
+    void validateCancellationAcceptsValidCancellation() {
+        LocalDateTime mockedNow = LocalDateTime.of(2026, Month.JUNE, 10, 10, 0, 0);
+        ZonedDateTime mockedZonedNow = mockedNow.atZone(ZoneId.systemDefault());
+
+        LocalDateTime validStart = mockedNow
+                .plusHours(25)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        try (MockedStatic<ZonedDateTime> mockedZDT = mockStatic(ZonedDateTime.class, CALLS_REAL_METHODS)) {
+            mockedZDT
+                    .when(() -> ZonedDateTime.now(any(ZoneId.class)))
+                    .thenReturn(mockedZonedNow);
+
+            assertDoesNotThrow(() -> validator.validateCancellation(validStart));
+        }
+    }
+
+    @Test
+    void validateCancellationRejectsInsufficientAdvanceNotice() {
+        LocalDateTime mockedNow = LocalDateTime.of(2026, Month.JUNE, 10, 10, 0, 0);
+        ZonedDateTime mockedZonedNow = mockedNow.atZone(ZoneId.systemDefault());
+
+        LocalDateTime invalidStart = mockedNow
+                .plusHours(12)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        try (MockedStatic<ZonedDateTime> mockedZDT = mockStatic(ZonedDateTime.class, CALLS_REAL_METHODS)) {
+            mockedZDT
+                    .when(() -> ZonedDateTime.now(any(ZoneId.class)))
+                    .thenReturn(mockedZonedNow);
+
+            ValidationException exception = assertThrows(
+                    ValidationException.class,
+                    () -> validator.validateCancellation(invalidStart)
+            );
+
+            assertEquals("Reservas só podem ser canceladas com no mínimo 24 horas de antecedência", exception.getMessage());
+        }
+    }
+
+    @Test
+    void validateReservationCreationAcceptsMinimumAdvanceNotice() {
+        LocalDateTime mockedNow = LocalDateTime.of(2026, Month.JUNE, 10, 10, 0, 0);
+        ZonedDateTime mockedZonedNow = mockedNow.atZone(ZoneId.systemDefault());
+
+        LocalDateTime validStart = mockedNow
+                .plusHours(24)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        LocalDateTime validEnd = validStart.plusHours(4);
+
+        ReservationCreateDTO dto = buildReservationCreateDTO(validStart, validEnd);
+
+        try (MockedStatic<ZonedDateTime> mockedZDT = mockStatic(ZonedDateTime.class, CALLS_REAL_METHODS)) {
+            mockedZDT
+                    .when(() -> ZonedDateTime.now(any(ZoneId.class)))
+                    .thenReturn(mockedZonedNow);
+
+            assertDoesNotThrow(() -> validator.validateReservationCreation(dto));
+        }
+    }
+
+    @Test
+    void validateMaxDurationAcceptsMaximumDuration() {
+        LocalDateTime validStart = TEST_REFERENCE_DATE
+                .withHour(10)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        LocalDateTime validEnd = validStart.plusHours(24);
+
+        assertDoesNotThrow(() -> validator.validateMaxDuration(validStart, validEnd));
+    }
+
+    @Test
+    void validateCancellationAcceptsMinimumAdvanceNotice() {
+        LocalDateTime mockedNow = LocalDateTime.of(2026, Month.JUNE, 10, 10, 0, 0);
+        ZonedDateTime mockedZonedNow = mockedNow.atZone(ZoneId.systemDefault());
+
+        LocalDateTime validStart = mockedNow
+                .plusHours(24)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        try (MockedStatic<ZonedDateTime> mockedZDT = mockStatic(ZonedDateTime.class, CALLS_REAL_METHODS)) {
+            mockedZDT
+                    .when(() -> ZonedDateTime.now(any(ZoneId.class)))
+                    .thenReturn(mockedZonedNow);
+
+            assertDoesNotThrow(() -> validator.validateCancellation(validStart));
+        }
     }
 
     private ReservationCreateDTO buildReservationCreateDTO(LocalDateTime startTime, LocalDateTime endTime) {

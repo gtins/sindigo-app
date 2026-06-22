@@ -22,11 +22,6 @@ public class JwtTokenProvider {
     @Value("${app.jwt.expiration:3600000}")
     private long jwtExpirationMs;
 
-    /**
-     * Gera um token JWT com base no usuário
-     * @param user Usuário autenticado
-     * @return Token JWT
-     */
     public String generateToken(User user) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
 
@@ -46,11 +41,6 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    /**
-     * Extrai o ID do usuário do token JWT
-     * @param token Token JWT
-     * @return ID do usuário
-     */
     public String getUserIdFromToken(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         return Jwts.parserBuilder()
@@ -61,11 +51,6 @@ public class JwtTokenProvider {
                 .getSubject();
     }
 
-    /**
-     * Extrai o email do usuário do token JWT
-     * @param token Token JWT
-     * @return Email do usuário
-     */
     public String getEmailFromToken(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         return (String) Jwts.parserBuilder()
@@ -76,11 +61,6 @@ public class JwtTokenProvider {
                 .get("email");
     }
 
-    /**
-     * Extrai o role do usuário do token JWT
-     * @param token Token JWT
-     * @return Role do usuário
-     */
     public String getRoleFromToken(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         return (String) Jwts.parserBuilder()
@@ -91,11 +71,6 @@ public class JwtTokenProvider {
                 .get("role");
     }
 
-    /**
-     * Valida se o token JWT é válido
-     * @param token Token JWT
-     * @return true se válido, false caso contrário
-     */
     public boolean validateToken(String token) {
         try {
             SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
@@ -109,10 +84,6 @@ public class JwtTokenProvider {
         }
     }
 
-    /**
-     * Retorna o tempo de expiração do token em segundos
-     * @return Tempo de expiração em segundos
-     */
     public long getExpirationTime() {
         return jwtExpirationMs / 1000;
     }

@@ -102,6 +102,22 @@ class ReservationControllerTest {
     }
 
     @Test
+    void cancelReservationReturnsUpdatedResponse() {
+        UUID condominiumId = UUID.randomUUID();
+        UUID reservationId = UUID.randomUUID();
+        ReservationResponseDTO response = buildResponse(condominiumId, ReservationStatus.CANCELLED);
+        response.setId(reservationId);
+
+        when(reservationService.cancelReservation(condominiumId, reservationId)).thenReturn(response);
+
+        var result = controller.cancelReservation(condominiumId, reservationId);
+
+        assertEquals(200, result.getStatusCode().value());
+        assertEquals(response, result.getBody());
+        verify(reservationService).cancelReservation(condominiumId, reservationId);
+    }
+
+    @Test
     void checkAvailabilityReturnsServiceMap() {
         UUID condominiumId = UUID.randomUUID();
         LocalDate date = LocalDate.of(2026, 6, 1);
@@ -121,6 +137,21 @@ class ReservationControllerTest {
         assertEquals(availability, result.getBody());
     }
 
+    @Test
+    void listReservationsByStatusForOwnerReturnsAll() {
+        UUID condominiumId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "startTime"));
+        ReservationResponseDTO response = buildResponse(condominiumId, ReservationStatus.CONFIRMED);
+        Page<ReservationResponseDTO> page = new PageImpl<>(List.of(response), pageable, 1);
+
+        when(reservationService.listByCondominiumAndStatus(condominiumId, ReservationStatus.CONFIRMED, pageable)).thenReturn(page);
+
+        var result = controller.listReservations(condominiumId, ReservationStatus.CONFIRMED, pageable);
+
+        assertEquals(200, result.getStatusCode().value());
+        assertEquals(1, result.getBody().getTotalElements());
+    }
+
     private ReservationResponseDTO buildResponse(UUID condominiumId, ReservationStatus status) {
         ReservationResponseDTO dto = new ReservationResponseDTO();
         dto.setId(UUID.randomUUID());
@@ -136,4 +167,3 @@ class ReservationControllerTest {
         return dto;
     }
 }
-

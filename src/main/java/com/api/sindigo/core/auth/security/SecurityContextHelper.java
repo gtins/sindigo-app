@@ -9,11 +9,6 @@ import java.util.UUID;
 @Component
 public class SecurityContextHelper {
 
-    /**
-     * Obtém o ID do usuário autenticado a partir do contexto de segurança
-     * @return UUID do usuário autenticado
-     * @throws IllegalStateException se nenhum usuário está autenticado
-     */
     public UUID getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -29,10 +24,6 @@ public class SecurityContextHelper {
         }
     }
 
-    /**
-     * Obtém o email do usuário autenticado
-     * @return Email do usuário
-     */
     public String getAuthenticatedUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

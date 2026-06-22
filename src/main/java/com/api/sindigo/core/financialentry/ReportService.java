@@ -25,9 +25,6 @@ public class ReportService {
 
     private final FinancialEntryRepository financialEntryRepository;
 
-    /**
-     * Exportar todas as entradas financeiras do condomínio para CSV
-     */
     @Transactional(readOnly = true)
     public String exportFinancialEntriesCSV(UUID condominiumId) {
         try {
@@ -39,9 +36,6 @@ public class ReportService {
         }
     }
 
-    /**
-     * Exportar entradas financeiras filtradas por período
-     */
     @Transactional(readOnly = true)
     public String exportFinancialEntriesCSVFiltered(UUID condominiumId, LocalDate startDate, LocalDate endDate) {
         try {
@@ -54,9 +48,6 @@ public class ReportService {
         }
     }
 
-    /**
-     * Exportar entradas financeiras filtradas por tipo (ENTRADA ou SAÍDA)
-     */
     @Transactional(readOnly = true)
     public String exportFinancialEntriesCSVByType(UUID condominiumId, FinancialEntryType type) {
         try {
@@ -69,14 +60,9 @@ public class ReportService {
         }
     }
 
-    /**
-     * Gera o CSV formatado com cabeçalhos e dados - OTIMIZADO PARA EXCEL
-     * UTF-8 BOM + Caracteres portugueses + Capitalização correta
-     */
     private String generateFinancialCSV(List<FinancialEntry> entries) throws IOException {
         StringWriter sw = new StringWriter();
-        
-        // CSVFormat.DEFAULT usa ',' mas Excel pt-BR prefere ';'
+
         CSVFormat csvFormat = CSVFormat.DEFAULT
                 .withDelimiter(';')
                 .withHeader("Id", "Data", "Tipo", "Valor (R$)", "Descricao")
@@ -88,7 +74,6 @@ public class ReportService {
             BigDecimal totalIncome = BigDecimal.ZERO;
             BigDecimal totalExpense = BigDecimal.ZERO;
 
-            // Adicionar cada entrada ao CSV
             for (FinancialEntry entry : entries) {
                 String tipo = entry.getType().equals(FinancialEntryType.INCOME) ? "Entrada" : "Saida";
                 String valor = entry.getAmount().setScale(2, java.math.RoundingMode.HALF_UP).toString();
@@ -98,11 +83,10 @@ public class ReportService {
                         entry.getId().toString(),
                         entry.getDate().format(formatter),
                         tipo,
-                        valor,  // Sem "R$" para Excel reconhecer como número
+                        valor,
                         descricao
                 );
 
-                // Calcular totais
                 if (entry.getType().equals(FinancialEntryType.INCOME)) {
                     totalIncome = totalIncome.add(entry.getAmount());
                 } else {
@@ -110,13 +94,12 @@ public class ReportService {
                 }
             }
 
-            // Adicionar resumo (separado visualmente)
             BigDecimal saldo = totalIncome.subtract(totalExpense);
             String totalIncomeStr = totalIncome.setScale(2, java.math.RoundingMode.HALF_UP).toString();
             String totalExpenseStr = totalExpense.setScale(2, java.math.RoundingMode.HALF_UP).toString();
             String saldoStr = saldo.setScale(2, java.math.RoundingMode.HALF_UP).toString();
             
-            printer.printRecord("", "", "", "", "");  // Linha vazia para separação
+            printer.printRecord("", "", "", "", "");
             printer.printRecord("Resumo", "", "", "", "");
             printer.printRecord("Total entradas", "", "", totalIncomeStr, "");
             printer.printRecord("Total saidas", "", "", totalExpenseStr, "");
@@ -127,10 +110,6 @@ public class ReportService {
         return sw.toString();
     }
 
-    /**
-     * Formata string: primeira letra maiúscula, resto minúscula
-     * Exemplo: "MANUTENCAO ASADA" → "Manutencao asada"
-     */
     private String capitalize(String text) {
         if (text == null || text.isEmpty()) {
             return text;

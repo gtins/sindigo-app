@@ -45,7 +45,7 @@ public class UserService {
                 .name(dto.getName())
                 .email(dto.getEmail())
                 .passwordHash(encryptedPassword)
-                .role(UserRole.MORADOR) // Todo novo usuário é morador por padrão
+                .role(UserRole.MORADOR)
                 .build();
 
         User savedUser = userRepository.save(newUser);
@@ -62,16 +62,13 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public LoginResponseDTO loginUser(LoginRequestDTO dto) {
-        // Buscar usuário por email
         User user = userRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Credenciais inválidas"));
 
-        // Validar senha
         if (!passwordEncoder.matches(dto.getPassword(), user.getPasswordHash())) {
             throw new ResourceNotFoundException("Credenciais inválidas");
         }
 
-        // Gerar token JWT
         String token = jwtTokenProvider.generateToken(user);
         long expirationSeconds = jwtTokenProvider.getExpirationTime();
 
@@ -85,7 +82,6 @@ public class UserService {
 
     @Transactional
     public AuthResponseDTO createAdmin(CreateAdminRequestDTO dto) {
-        // Validar chave secreta
         if (adminSecretKey == null || adminSecretKey.isEmpty()) {
             throw new IllegalArgumentException("Criação de admin não está configurada");
         }
@@ -94,13 +90,11 @@ public class UserService {
             throw new IllegalArgumentException("Chave secreta inválida");
         }
 
-        // Verificar se email já existe
         boolean emailExists = userRepository.findByEmail(dto.getEmail()).isPresent();
         if (emailExists) {
             throw new IllegalArgumentException("Email já cadastrado");
         }
 
-        // Validar dados
         if (dto.getEmail() == null || dto.getEmail().isEmpty()) {
             throw new IllegalArgumentException("Email é obrigatório");
         }

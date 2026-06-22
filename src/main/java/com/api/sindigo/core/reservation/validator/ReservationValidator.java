@@ -12,8 +12,8 @@ import java.time.ZonedDateTime;
 @Component
 public class ReservationValidator extends BaseValidator {
 
-    private static final int MINIMUM_ADVANCE_DAYS = 7;
-    private static final int MAXIMUM_DURATION_HOURS = 6;
+    private static final int MINIMUM_ADVANCE_HOURS = 24;
+    private static final int MAXIMUM_DURATION_HOURS = 24;
     private static final ZoneId APPLICATION_TIME_ZONE = ZoneId.systemDefault();
 
     public void validateReservationCreation(ReservationCreateDTO dto) {
@@ -35,11 +35,11 @@ public class ReservationValidator extends BaseValidator {
         ZonedDateTime now = ZonedDateTime.now(APPLICATION_TIME_ZONE);
         ZonedDateTime reservationStart = toZoneAwareDateTime(startTime);
 
-        long daysUntilReservation = Duration.between(now, reservationStart).toDays();
+        long hoursUntilReservation = Duration.between(now, reservationStart).toHours();
 
         validateCondition(
-                daysUntilReservation >= MINIMUM_ADVANCE_DAYS,
-                "As reservas devem ser feitas com no mínimo " + MINIMUM_ADVANCE_DAYS + " dias de antecedência"
+                hoursUntilReservation >= MINIMUM_ADVANCE_HOURS,
+                "As reservas devem ser feitas com no mínimo " + MINIMUM_ADVANCE_HOURS + " horas de antecedência"
         );
     }
 
@@ -59,6 +59,18 @@ public class ReservationValidator extends BaseValidator {
         validateCondition(
                 !hasConflicts,
                 "Já existe uma reserva para esta área no período solicitado"
+        );
+    }
+
+    public void validateCancellation(LocalDateTime startTime) {
+        ZonedDateTime now = ZonedDateTime.now(APPLICATION_TIME_ZONE);
+        ZonedDateTime reservationStart = toZoneAwareDateTime(startTime);
+
+        long hoursUntilReservation = Duration.between(now, reservationStart).toHours();
+
+        validateCondition(
+                hoursUntilReservation >= MINIMUM_ADVANCE_HOURS,
+                "Reservas só podem ser canceladas com no mínimo " + MINIMUM_ADVANCE_HOURS + " horas de antecedência"
         );
     }
 

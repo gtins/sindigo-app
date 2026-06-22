@@ -32,13 +32,13 @@ public class SecretsValidator {
 
 	private void validateJwtSecret() {
 		if (jwtSecret == null || jwtSecret.isEmpty()) {
-			log.error("❌ ERRO CRÍTICO: APP_JWT_SECRET não está configurado!");
+			log.error("ERRO CRÍTICO: APP_JWT_SECRET não está configurado!");
 			throw new IllegalStateException("APP_JWT_SECRET environment variable is required");
 		}
 
 		if (jwtSecret.contains("your-super-secret-key") || jwtSecret.length() < 32) {
-			log.warn("⚠️ AVISO DE SEGURANÇA: JWT_SECRET fraco detectado!");
-			log.warn("   Configure APP_JWT_SECRET com valor forte (mínimo 32 caracteres)");
+			log.warn("⚠AVISO DE SEGURANÇA: JWT_SECRET fraco detectado!");
+			log.warn("Configure APP_JWT_SECRET com valor forte (mínimo 32 caracteres)");
 			if (isProduction()) {
 				throw new IllegalStateException("JWT_SECRET é muito fraco para produção");
 			}
@@ -47,13 +47,13 @@ public class SecretsValidator {
 
 	private void validateAdminSecret() {
 		if (adminSecretKey == null || adminSecretKey.isEmpty()) {
-			log.error("❌ ERRO CRÍTICO: APP_ADMIN_SECRET_KEY não está configurado!");
+			log.error("ERRO CRÍTICO: APP_ADMIN_SECRET_KEY não está configurado!");
 			throw new IllegalStateException("APP_ADMIN_SECRET_KEY environment variable is required");
 		}
 
 		if (adminSecretKey.contains("sindigo-hash-teste") || adminSecretKey.length() < 16) {
-			log.warn("⚠️ AVISO DE SEGURANÇA: ADMIN_SECRET_KEY fraco detectado!");
-			log.warn("   Configure APP_ADMIN_SECRET_KEY com valor forte (mínimo 16 caracteres)");
+			log.warn("⚠AVISO DE SEGURANÇA: ADMIN_SECRET_KEY fraco detectado!");
+			log.warn("Configure APP_ADMIN_SECRET_KEY com valor forte (mínimo 16 caracteres)");
 			if (isProduction()) {
 				throw new IllegalStateException("ADMIN_SECRET_KEY é muito fraco para produção");
 			}

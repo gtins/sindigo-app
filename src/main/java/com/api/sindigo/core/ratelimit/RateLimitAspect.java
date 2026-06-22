@@ -17,9 +17,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Aspect AOP que implementa rate limiting em métodos anotados com @RateLimited
- */
 @Aspect
 @Component
 @RequiredArgsConstructor
@@ -33,7 +30,6 @@ public class RateLimitAspect {
         HttpServletRequest request = getHttpRequest();
         
         if (request == null) {
-            // Se não for uma requisição HTTP, permitir
             return joinPoint.proceed();
         }
         
@@ -68,19 +64,13 @@ public class RateLimitAspect {
         
         return joinPoint.proceed();
     }
-    
-    /**
-     * Obtém o identificador único do cliente
-     * Prioridade: UserId autenticado > IP do cliente
-     */
+
     private String getClientIdentifier(HttpServletRequest request) {
-        // Tentar obter do usuário autenticado
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !(auth.getPrincipal() instanceof String && "anonymousUser".equals(auth.getPrincipal()))) {
             return "user:" + auth.getPrincipal();
         }
-        
-        // Fallback para IP do cliente
+
         String clientIp = request.getHeader("X-Forwarded-For");
         if (clientIp == null || clientIp.isEmpty()) {
             clientIp = request.getRemoteAddr();
@@ -88,10 +78,7 @@ public class RateLimitAspect {
         
         return "ip:" + clientIp;
     }
-    
-    /**
-     * Obtém a requisição HTTP do contexto
-     */
+
     private HttpServletRequest getHttpRequest() {
         try {
             ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();

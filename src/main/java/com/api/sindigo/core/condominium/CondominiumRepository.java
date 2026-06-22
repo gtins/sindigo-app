@@ -13,9 +13,6 @@ public interface CondominiumRepository extends JpaRepository<Condominium, UUID> 
 
     Optional<Condominium> findByIdAndOwnerId(UUID id, UUID ownerId);
 
-    /**
-     * Busca um condomínio se o usuário é owner OU membro (morador)
-     */
     @Query("SELECT c FROM Condominium c " +
            "LEFT JOIN Membership m ON c.id = m.condominium.id " +
            "WHERE c.id = :condominiumId AND (c.owner.id = :userId OR m.user.id = :userId)")

@@ -6,16 +6,10 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Serviço de Rate Limiting em memória
- * 
- * Manter controle de requisições por cliente e endpoint
- */
 @Service
 @RequiredArgsConstructor
 public class RateLimitService {
-    
-    // Estrutura: {endpoint}:{clientId} -> lista de timestamps
+
     private final Map<String, List<Long>> requestLog = new ConcurrentHashMap<>();
     
     /**
@@ -33,11 +27,9 @@ public class RateLimitService {
         long windowStart = now - (windowSeconds * 1000L);
         
         List<Long> requests = requestLog.computeIfAbsent(key, k -> new ArrayList<>());
-        
-        // Remover requisições fora da janela
+
         requests.removeIf(timestamp -> timestamp < windowStart);
-        
-        // Verificar se pode fazer a requisição
+
         if (requests.size() < maxRequests) {
             requests.add(now);
             return true;

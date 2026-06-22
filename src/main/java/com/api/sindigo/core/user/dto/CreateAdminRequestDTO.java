@@ -13,6 +13,6 @@ public class CreateAdminRequestDTO {
     private String name;
     private String email;
     private String password;
-    private String secretKey; // Chave secreta para criar admin
+    private String secretKey;
 }
 
