@@ -17,14 +17,6 @@
   <a href="https://github.com/gtins/sindigo-app/actions/workflows/prod.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/gtins/sindigo-app/prod.yml?branch=master&label=CI%2FCD%20Backend&style=flat-square&logo=githubactions&logoColor=white" alt="CI/CD Backend"/>
   </a>
-
-  <a href="https://github.com/gtins/frontend-sindigo/actions/workflows/frontend-deploy.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/gtins/frontend-sindigo/frontend-deploy.yml?branch=master&label=Deploy%20Frontend&style=flat-square&logo=githubactions&logoColor=white" alt="Deploy Frontend"/>
-  </a>
-
-  <a href="https://github.com/gtins/frontend-sindigo/actions/workflows/frontend-tests.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/gtins/frontend-sindigo/frontend-tests.yml?branch=master&label=Tests%20Frontend&style=flat-square&logo=githubactions&logoColor=white" alt="Tests Frontend"/>
-  </a>
 </p>
 
 ---
