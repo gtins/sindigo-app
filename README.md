@@ -59,7 +59,7 @@ Sistema web de gestão condominial com foco em atividades periódicas, reservas 
 - RF06: Disponibilizar dashboard com calendário e relatórios.  
 - RF07: Manter histórico de auditoria de ações.  
 
-### Requisitos Não Funcionais (RNF)   ( A confirmar com a professora) 
+### Requisitos Não Funcionais (RNF)
 - RNF01: Garantir hospedagem em nuvem com disponibilidade mínima de 95%.  
 - RNF02: Garantir autenticação segura via JWT e hash de senhas.  
 - RNF03: Fornecer interface responsiva e acessível (WCAG 2.1).  
