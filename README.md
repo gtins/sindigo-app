@@ -13,11 +13,17 @@
   <a href="https://sonarcloud.io/summary/new_code?id=gtins_sindigo-app">
     <img src="https://sonarcloud.io/api/project_badges/measure?project=gtins_sindigo-app&metric=alert_status" alt="Quality Gate Status"/>
   </a>
-  <a href="https://github.com/gtins/sindigo-app/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/gtins/sindigo-app/ci-cd.yml?branch=master&label=CI%2FCD%20Backend&style=flat-square" alt="Backend CI/CD"/>
+
+  <a href="https://github.com/gtins/sindigo-app/actions/workflows/prod.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/gtins/sindigo-app/prod.yml?branch=master&label=CI%2FCD%20Backend&style=flat-square&logo=githubactions&logoColor=white" alt="CI/CD Backend"/>
   </a>
-  <a href="https://github.com/gtins/frontend-sindigo/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/gtins/frontend-sindigo/frontend-ci.yml?branch=master&label=CI%2FCD%20Frontend&style=flat-square" alt="Frontend CI/CD"/>
+
+  <a href="https://github.com/gtins/frontend-sindigo/actions/workflows/frontend-deploy.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/gtins/frontend-sindigo/frontend-deploy.yml?branch=master&label=Deploy%20Frontend&style=flat-square&logo=githubactions&logoColor=white" alt="Deploy Frontend"/>
+  </a>
+
+  <a href="https://github.com/gtins/frontend-sindigo/actions/workflows/frontend-tests.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/gtins/frontend-sindigo/frontend-tests.yml?branch=master&label=Tests%20Frontend&style=flat-square&logo=githubactions&logoColor=white" alt="Tests Frontend"/>
   </a>
 </p>
 
