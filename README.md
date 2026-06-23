@@ -336,39 +336,6 @@ docker compose down -v
 
 ---
 
-## Variáveis de Ambiente
-
-Exemplo de `.env` para desenvolvimento:
-
-```env
-POSTGRES_DB=sindigo
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-
-SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sindigo
-SPRING_DATASOURCE_USERNAME=postgres
-SPRING_DATASOURCE_PASSWORD=postgres
-SPRING_JPA_HIBERNATE_DDL_AUTO=update
-
-APP_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080,https://sindigo.site,https://www.sindigo.site
-
-APP_JWT_SECRET=troque_por_um_segredo_forte
-APP_JWT_EXPIRATION=3600000
-APP_ADMIN_SECRET_KEY=troque_por_uma_chave_admin
-
-AWS_S3_REGION=us-east-2
-AWS_S3_BUCKET_NAME=nome-do-bucket
-AWS_ACCESS_KEY_ID=sua_access_key
-AWS_SECRET_ACCESS_KEY=sua_secret_key
-
-GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=admin
-```
-
-> Nunca versionar arquivos `.env` reais contendo senhas, tokens, chaves AWS ou segredos JWT.
-
----
-
 ## Documentação da API
 
 A documentação da API é disponibilizada via Swagger.
